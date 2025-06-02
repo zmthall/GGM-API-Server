@@ -20,8 +20,41 @@ const communityStorage = multer.diskStorage({
     }
 });
 
+const tempUpload = multer({ dest: 'uploads/temp/' });
+
+// const communityShownStorage = multer.diskStorage({
+//     destination: 'uploads/community/shown/',
+//     filename: (req, file, cb) => {
+//         const ext = path.extname(file.originalname); // preserve original file extension
+//         const uniqueName = `${uuidv4()}${ext}`;
+//         cb(null, uniqueName);
+//     }
+// });
+
 const communityUpload = multer({ storage: communityStorage });
 
-router.post('/community-upload', authenticateKey, communityUpload.single('file'), uploadCommunityMedia);
+router.post('/community-upload', authenticateKey, communityUpload.fields([
+    { name: 'single', maxCount: 1 },
+    { name: 'multi', maxCount: 25 }
+]), uploadCommunityMedia);
+
+import { getCommunityShown, updateCommunityShown, deleteCommunityShownMedia, deleteAllCommunityShownImages } from '../controllers/mediaShown.controller.js';
+
+router.get('/community-shown', getCommunityShown);
+router.put('/community-shown/:slot', authenticateKey, tempUpload.single('file'), updateCommunityShown);
+router.delete('/delete-shown/:slot', authenticateKey, deleteCommunityShownMedia);
+router.delete('/community/delete-shown/all', authenticateKey, deleteAllCommunityShownImages);
+
+// Error handler for Multer-specific errors
+router.use((err, req, res, next) => {
+  console.log(req.files)
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      message: 'Multer upload error',
+      error: err.message,
+    });
+  }
+  next(err); // fallback
+});
 
 export default router;
