@@ -13,4 +13,8 @@ app.use('/uploads', express.static('uploads'));
 app.use(express.static('static'));
 app.use('/api/media', mediaRouter);
 
+app.get('/', (req, res) => {
+    res.status(403).json({ message: 'Access is not available.' });
+})
+
 export default app;
