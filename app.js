@@ -14,7 +14,7 @@ app.use(express.static('static'));
 app.use('/api/media', mediaRouter);
 
 app.get('/', (req, res) => {
-    res.status(403).json({ message: 'Access is not available.' });
+    res.status(403).send('<h1>Access is not Available.</h1>');
 })
 
 export default app;
