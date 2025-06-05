@@ -11,9 +11,9 @@ export const updateCommunityShown = (req, res) => {
   const slot = parseInt(req.params.slot, 10);
   const file = req.file;
   
-  if (isNaN(slot) || slot < 1 || slot > 6) {
+  if (isNaN(slot) || slot < 1 || slot > 8) {
     fs.unlinkSync(file.path);
-    return res.status(400).json({ message: 'Slot must be between 1 and 6' });
+    return res.status(400).json({ message: 'Slot must be between 1 and 8' });
   }
 
   const alt = req.body.alt || null;
@@ -38,8 +38,8 @@ export const deleteCommunityShownMedia = async (req, res) => {
   const { slot } = req.params;
   const slotNumber = parseInt(slot, 10);
 
-  if (!slotNumber || slotNumber < 1 || slotNumber > 6) {
-    return res.status(400).json({ message: 'Slot must be an integer from 1 to 6.' });
+  if (!slotNumber || slotNumber < 1 || slotNumber > 8) {
+    return res.status(400).json({ message: 'Slot must be an integer from 1 to 8.' });
   }
 
   try {
