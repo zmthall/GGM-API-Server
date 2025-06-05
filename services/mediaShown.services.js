@@ -15,14 +15,14 @@ export const ensureShownDir = () => {
   }
 };
 
-// GET - map of 1–6 to filename or null
+// GET - map of 1–8 to filename or null
 export const getSlotMap = () => {
   ensureShownDir();
 
   const files = fs.readdirSync(SHOWN_DIR);
   const slotMap = {};
 
-  for (let i = 1; i <= 6; i++) {
+  for (let i = 1; i <= 8; i++) {
     const file = files.find(f => f.startsWith(`${i}.`) && ALLOWED_EXTENSIONS.includes(path.extname(f).toLowerCase()));
     const altPath = path.join(SHOWN_DIR, `${i}.json`);
 
