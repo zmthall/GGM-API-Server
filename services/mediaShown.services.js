@@ -20,9 +20,9 @@ export const getSlotMap = () => {
   ensureShownDir();
 
   const files = fs.readdirSync(SHOWN_DIR);
-  const slotMap = {};
+  const slotMap = [];
 
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 0; i <= 7; i++) {
     const file = files.find(f => f.startsWith(`${i}.`) && ALLOWED_EXTENSIONS.includes(path.extname(f).toLowerCase()));
     const altPath = path.join(SHOWN_DIR, `${i}.json`);
 
@@ -38,8 +38,8 @@ export const getSlotMap = () => {
 
     slotMap[i] = file
       ? {
-          filename: file,
-          url: `${FULL_BASE_URL}/uploads/community/shown/${file}`,
+          id: file,
+          src: `${FULL_BASE_URL}/uploads/community/shown/${file}`,
           alt
         }
       : null;
