@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import { FULL_BASE_URL } from '../config/url.js';
+import { FULL_BASE_URL } from '../config/url';
 
-export const IMAGES_DIR = path.resolve('uploads/community/images');
+export const IMAGES_DIR = path.resolve('src/uploads/community/images');
 export const IMAGES_JSON_PATH = path.join(IMAGES_DIR, 'images.json');
 
 export const ensureImagesJsonExists = () => {
@@ -16,7 +16,7 @@ export const fetchCommunityImageData = () => {
     ['.jpg', '.jpeg', '.png', '.webp'].some(ext => file.toLowerCase().endsWith(ext))
   );
 
-  let alts = {};
+  let alts: Record<string, string> = {};
   if (fs.existsSync(IMAGES_JSON_PATH)) {
     try {
       alts = JSON.parse(fs.readFileSync(IMAGES_JSON_PATH, 'utf-8'));
@@ -35,7 +35,7 @@ export const fetchCommunityImageData = () => {
   });
 };
 
-export const saveCommunityMediaFile = (file, alt = '') => {
+export const saveCommunityMediaFile = (file: Express.Multer.File, alt = '') => {
   ensureImagesJsonExists();
   const uuid = path.parse(file.filename).name;
   const data = JSON.parse(fs.readFileSync(IMAGES_JSON_PATH, 'utf-8'));
@@ -47,7 +47,7 @@ export const saveCommunityMediaFile = (file, alt = '') => {
 };
 
 // Delete file by UUID
-export const deleteCommunityImageByUUID = (uuid) => {
+export const deleteCommunityImageByUUID = (uuid: string) => {
   const files = fs.readdirSync(IMAGES_DIR);
   const match = files.find(f => f.startsWith(uuid));
 
@@ -61,7 +61,7 @@ export const deleteCommunityImageByUUID = (uuid) => {
 };
 
 // Remove UUID from images.json
-export const removeAltFromImagesJson = (uuid) => {
+export const removeAltFromImagesJson = (uuid: string) => {
   if (!fs.existsSync(IMAGES_JSON_PATH)) return;
 
   const raw = fs.readFileSync(IMAGES_JSON_PATH, 'utf-8');

@@ -4,13 +4,13 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 
 // Middleware
-import { authenticateKey } from '../middlewares/authenticateKey.js';
+import { authenticateKey } from '../middlewares/authenticateKey';
 
 // Instantiation of router
 const router = express.Router();
 
 // Community Media
-import { uploadCommunityMedia, deleteCommunityImage, getCommunityImages } from '../controllers/media.controller.js';
+import { uploadCommunityMedia, deleteCommunityImage, getCommunityImages } from '../controllers/media.controller';
 
 // GET - http://127.0.0.1:4000/api/media/community-upload | Gets all images and alts in the folder for community images
 // POST - http://127.0.0.1:4000/api/media/community-upload | Key: single || multi | FormData: File | Image value | Adds image/images to the community images file
@@ -19,7 +19,7 @@ router.get('/community-upload', getCommunityImages);
 
 // Multer setup for Community Media Uploading
 const communityStorage = multer.diskStorage({
-    destination: 'uploads/community/images/',
+    destination: 'src/uploads/community/images/',
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname); // preserve original file extension
         const uniqueName = `${uuidv4()}${ext}`;
@@ -37,9 +37,9 @@ router.post('/community-upload', authenticateKey, communityUpload.fields([
 router.delete('/delete-upload/:uuid', authenticateKey, deleteCommunityImage);
 
 // Shown Community Media
-const tempUpload = multer({ dest: 'uploads/temp/' });
+const tempUpload = multer({ dest: 'src/uploads/temp/' });
 
-import { getCommunityShown, updateCommunityShown, deleteCommunityShownMedia, deleteAllCommunityShownImages } from '../controllers/mediaShown.controller.js';
+import { getCommunityShown, updateCommunityShown, deleteCommunityShownMedia, deleteAllCommunityShownImages } from '../controllers/mediaShown.controller';
 
 // GET - http://127.0.0.1:4000/api/media/community-shown | Gets all shown media slots and alts
 // PUT - http://127.0.0.1:4000/api/media/community-shown/:slot | Updates specific slot locations with other images
@@ -49,17 +49,5 @@ router.get('/community-shown', getCommunityShown);
 router.put('/community-shown/:slot', authenticateKey, tempUpload.single('file'), updateCommunityShown);
 router.delete('/delete-shown/:slot', authenticateKey, deleteCommunityShownMedia);
 router.delete('/community/delete-shown/all', authenticateKey, deleteAllCommunityShownImages);
-
-// Error handler for Multer-specific errors
-router.use((err, req, res, next) => {
-  console.log(req.files)
-  if (err instanceof multer.MulterError) {
-    return res.status(400).json({
-      message: 'Multer upload error',
-      error: err.message,
-    });
-  }
-  next(err); // fallback
-});
 
 export default router;
