@@ -45,6 +45,11 @@ export const validateEvent = (data: Partial<Event>): ValidationResult => {
 
   if (!data.description?.trim()) {
     errors.push({ field: 'description', message: 'Description is required' });
+  } else if (data.description.trim().length < 200) {
+    errors.push({ 
+      field: 'description', 
+      message: 'Description must be at least 200 characters long' 
+    });
   }
 
   if (!data.link?.trim()) {
