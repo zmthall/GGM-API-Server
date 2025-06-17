@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { FULL_BASE_URL } from '../config/url';
 
-export const IMAGES_DIR = path.resolve('src/uploads/community/images');
+export const IMAGES_DIR = path.resolve('uploads/community/images');
 export const IMAGES_JSON_PATH = path.join(IMAGES_DIR, 'images.json');
 
 export const ensureImagesJsonExists = () => {

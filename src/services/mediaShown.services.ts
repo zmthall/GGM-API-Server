@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { FULL_BASE_URL } from '../config/url';
 
-const SHOWN_DIR = path.resolve('src/uploads/community/shown');
+const SHOWN_DIR = path.resolve('uploads/community/shown');
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';

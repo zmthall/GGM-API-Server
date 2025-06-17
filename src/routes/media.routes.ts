@@ -19,7 +19,7 @@ router.get('/community-upload', getCommunityImages);
 
 // Multer setup for Community Media Uploading
 const communityStorage = multer.diskStorage({
-    destination: 'src/uploads/community/images/',
+    destination: 'uploads/community/images/',
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname); // preserve original file extension
         const uniqueName = `${uuidv4()}${ext}`;
@@ -37,7 +37,7 @@ router.post('/community-upload', authenticateKey, communityUpload.fields([
 router.delete('/delete-upload/:uuid', authenticateKey, deleteCommunityImage);
 
 // Shown Community Media
-const tempUpload = multer({ dest: 'src/uploads/temp/' });
+const tempUpload = multer({ dest: 'uploads/temp/' });
 
 import { getCommunityShown, updateCommunityShown, deleteCommunityShownMedia, deleteAllCommunityShownImages } from '../controllers/mediaShown.controller';
 
