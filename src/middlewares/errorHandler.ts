@@ -2,8 +2,6 @@ import type { ErrorRequestHandler } from 'express';
 import multer from 'multer';
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
-  console.log(req.files);
-
   if (err instanceof multer.MulterError) {
     res.status(400).json({
       message: 'Multer upload error',
