@@ -2,6 +2,7 @@ import express from 'express'
 import path from 'path';
 import mediaRouter from './routes/media.routes';
 import eventRouter from './routes/event.routes';
+import jobRouter from './routes/jobs.routes';
 import cors from 'cors';
 import 'dotenv/config';
 
@@ -14,6 +15,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(express.static(path.join(__dirname, '../static')));
 app.use('/api/media', mediaRouter);
 app.use('/api/events', eventRouter)
+app.use('/api/jobs', jobRouter)
 app.use(errorHandler);
 
 app.get('/', (req, res) => {

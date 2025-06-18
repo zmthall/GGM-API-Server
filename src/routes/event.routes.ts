@@ -14,13 +14,13 @@ import { authenticateKey } from '../middlewares/authenticateKey';
 
 const router = Router();
 
-// PUT -
-// GET - 
-// GET - 
-// GET - 
-// POST -
-// DELETE - 
-// PUT - ARCHIVE 
+// POST - http://127.0.0.1:4000/api/events | Adds a new event to the firebase database
+// GET -  http://127.0.0.1:4000/api/events | Fetches all events from the firebase database with pagination and 10 events per page
+// GET -  http://127.0.0.1:4000/api/events/archived | Fetches all archived events from the firebase database with pagination and 10 events per page
+// GET - http://127.0.0.1:4000/api/events/:id | Fetches specific events by UUID
+// PUT - http://127.0.0.1:4000/api/events/:id | Updates specific event by UUID
+// DELETE - http://127.0.0.1:4000/api/events/:id | Deletes specific event by UUID (permanent delete)
+// PUT - ARCHIVE - http://127.0.0.1:4000/api/events/:id/archive | Deletes and event by archiving it by UUID (temporary delete)
 router.post('/', authenticateKey, createEvent);
 router.get('/', getAllEvents);
 router.get('/archived', getArchivedEvents)

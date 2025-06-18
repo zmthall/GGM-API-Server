@@ -130,6 +130,63 @@ export const getPaginatedDocuments = async <T>(
   }
 };
 
+export const getDocumentsByField = async <T = DocumentData>(
+  collectionName: string,
+  fieldName: string,
+  fieldValue: any
+): Promise<FirebaseDocument[]> => {
+  try {
+    const q = query(
+      collection(firebaseDB, collectionName),
+      where(fieldName, '==', fieldValue)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    throw new Error(`Error getting documents by field: ${(error as Error).message}`);
+  }
+};
+
+// If you want a version that returns only the first match
+export const getFirstDocumentByField = async <T = DocumentData>(
+  collectionName: string,
+  fieldName: string,
+  fieldValue: any
+): Promise<FirebaseDocument | null> => {
+  try {
+    const q = query(
+      collection(firebaseDB, collectionName),
+      where(fieldName, '==', fieldValue),
+      limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.length > 0 
+      ? { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() }
+      : null;
+  } catch (error) {
+    throw new Error(`Error getting document by field: ${(error as Error).message}`);
+  }
+};
+
+// More flexible version with different operators
+export const getDocumentsByFieldWithOperator = async <T = DocumentData>(
+  collectionName: string,
+  fieldName: string,
+  operator: '==' | '!=' | '<' | '<=' | '>' | '>=' | 'array-contains' | 'array-contains-any' | 'in' | 'not-in',
+  fieldValue: any
+): Promise<FirebaseDocument[]> => {
+  try {
+    const q = query(
+      collection(firebaseDB, collectionName),
+      where(fieldName, operator, fieldValue)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    throw new Error(`Error getting documents by field with operator: ${(error as Error).message}`);
+  }
+};
+
 export const updateDocument = async <T extends Partial<DocumentData>>(
   collectionName: string, 
   docId: string, 
