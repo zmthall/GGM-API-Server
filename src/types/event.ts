@@ -1,4 +1,5 @@
-import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+// types/event.ts
+import * as admin from 'firebase-admin';
 
 export type Event = {
     id: string;
@@ -16,7 +17,7 @@ export type Events = Event[];
 
 export interface PaginationOptions {
   pageSize?: number;
-  lastDoc?: QueryDocumentSnapshot<DocumentData>;
+  lastDoc?: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>;
   orderField?: string;
   orderDirection?: 'asc' | 'desc';
 }
@@ -24,5 +25,5 @@ export interface PaginationOptions {
 export interface PaginatedResult<T> {
   data: T[];
   hasNextPage: boolean;
-  lastDocument?: QueryDocumentSnapshot<DocumentData>;
+  lastDocument?: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>;
 }

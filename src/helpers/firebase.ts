@@ -1,73 +1,55 @@
 // helpers/firebaseHelpers.ts
 import { firebaseDB } from '../config/firebase';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  getDocs, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  orderBy,
-  limit,
-  startAfter,
-  where,
-  DocumentData,
-  QueryConstraint,
-  Query
-} from 'firebase/firestore';
 import type { FirebaseDocument, CreateDocumentResult } from '../types/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import type { PaginatedResult, PaginationOptions } from '../types/event';
 
-export const createDocument = async <T extends DocumentData>(
+export const createDocument = async <T extends Record<string, any>>(
   collectionName: string, 
   data: T
 ): Promise<CreateDocumentResult<T>> => {
   try {
-    const customId = uuidv4(); // Generate your own UUID
-    const docRef = doc(firebaseDB, collectionName, customId);
-    await setDoc(docRef, data);
+    const customId = uuidv4();
+    const docRef = firebaseDB.collection(collectionName).doc(customId);
+    await docRef.set(data);
     return { id: customId, data };
   } catch (error) {
     throw new Error(`Error creating document: ${(error as Error).message}`);
   }
 };
 
-// Optional: If you want to pass your own ID
-export const createDocumentWithId = async <T extends DocumentData>(
+export const createDocumentWithId = async <T extends Record<string, any>>(
   collectionName: string,
   customId: string,
   data: T
 ): Promise<CreateDocumentResult<T>> => {
   try {
-    const docRef = doc(firebaseDB, collectionName, customId);
-    await setDoc(docRef, data);
+    const docRef = firebaseDB.collection(collectionName).doc(customId);
+    await docRef.set(data);
     return { id: customId, data };
   } catch (error) {
     throw new Error(`Error creating document: ${(error as Error).message}`);
   }
 };
 
-export const getDocument = async <T = DocumentData>(
+export const getDocument = async <T = Record<string, any>>(
   collectionName: string, 
   docId: string
 ): Promise<FirebaseDocument | null> => {
   try {
-    const docRef = doc(firebaseDB, collectionName, docId);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+    const docRef = firebaseDB.collection(collectionName).doc(docId);
+    const docSnap = await docRef.get();
+    return docSnap.exists ? { id: docSnap.id, ...docSnap.data() } : null;
   } catch (error) {
     throw new Error(`Error getting document: ${(error as Error).message}`);
   }
 };
 
-export const getAllDocuments = async <T = DocumentData>(
+export const getAllDocuments = async <T = Record<string, any>>(
   collectionName: string
 ): Promise<FirebaseDocument[]> => {
   try {
-    const querySnapshot = await getDocs(collection(firebaseDB, collectionName));
+    const querySnapshot = await firebaseDB.collection(collectionName).get();
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     throw new Error(`Error getting documents: ${(error as Error).message}`);
@@ -87,25 +69,22 @@ export const getPaginatedDocuments = async <T>(
       orderDirection = 'desc'
     } = options;
 
-    const collectionRef = collection(firebaseDB, collectionName);
-    
-    // Build base query with filters
-    let q: Query = collectionRef;
+    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = firebaseDB.collection(collectionName);
     
     // Apply filters
     Object.entries(filters).forEach(([field, value]) => {
-      q = query(q, where(field, '==', value));
+      query = query.where(field, '==', value);
     });
 
     // Add ordering and limit
-    q = query(q, orderBy(orderField, orderDirection), limit(pageSize + 1));
+    query = query.orderBy(orderField, orderDirection).limit(pageSize + 1);
 
     // Add pagination cursor if provided
     if (lastDoc) {
-      q = query(q, startAfter(lastDoc));
+      query = query.startAfter(lastDoc);
     }
 
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await query.get();
     const docs = querySnapshot.docs;
     
     // Check if there's a next page
@@ -130,36 +109,33 @@ export const getPaginatedDocuments = async <T>(
   }
 };
 
-export const getDocumentsByField = async <T = DocumentData>(
+export const getDocumentsByField = async <T = Record<string, any>>(
   collectionName: string,
   fieldName: string,
   fieldValue: any
 ): Promise<FirebaseDocument[]> => {
   try {
-    const q = query(
-      collection(firebaseDB, collectionName),
-      where(fieldName, '==', fieldValue)
-    );
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await firebaseDB
+      .collection(collectionName)
+      .where(fieldName, '==', fieldValue)
+      .get();
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     throw new Error(`Error getting documents by field: ${(error as Error).message}`);
   }
 };
 
-// If you want a version that returns only the first match
-export const getFirstDocumentByField = async <T = DocumentData>(
+export const getFirstDocumentByField = async <T = Record<string, any>>(
   collectionName: string,
   fieldName: string,
   fieldValue: any
 ): Promise<FirebaseDocument | null> => {
   try {
-    const q = query(
-      collection(firebaseDB, collectionName),
-      where(fieldName, '==', fieldValue),
-      limit(1)
-    );
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await firebaseDB
+      .collection(collectionName)
+      .where(fieldName, '==', fieldValue)
+      .limit(1)
+      .get();
     return querySnapshot.docs.length > 0 
       ? { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() }
       : null;
@@ -168,33 +144,31 @@ export const getFirstDocumentByField = async <T = DocumentData>(
   }
 };
 
-// More flexible version with different operators
-export const getDocumentsByFieldWithOperator = async <T = DocumentData>(
+export const getDocumentsByFieldWithOperator = async <T = Record<string, any>>(
   collectionName: string,
   fieldName: string,
-  operator: '==' | '!=' | '<' | '<=' | '>' | '>=' | 'array-contains' | 'array-contains-any' | 'in' | 'not-in',
+  operator: '<' | '<=' | '==' | '!=' | '>=' | '>' | 'array-contains' | 'array-contains-any' | 'in' | 'not-in',
   fieldValue: any
 ): Promise<FirebaseDocument[]> => {
   try {
-    const q = query(
-      collection(firebaseDB, collectionName),
-      where(fieldName, operator, fieldValue)
-    );
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await firebaseDB
+      .collection(collectionName)
+      .where(fieldName, operator, fieldValue)
+      .get();
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     throw new Error(`Error getting documents by field with operator: ${(error as Error).message}`);
   }
 };
 
-export const updateDocument = async <T extends Partial<DocumentData>>(
+export const updateDocument = async <T extends Partial<Record<string, any>>>(
   collectionName: string, 
   docId: string, 
   data: T
 ): Promise<{ id: string } & T> => {
   try {
-    const docRef = doc(firebaseDB, collectionName, docId);
-    await updateDoc(docRef, data);
+    const docRef = firebaseDB.collection(collectionName).doc(docId);
+    await docRef.update(data);
     return { id: docId, ...data };
   } catch (error) {
     throw new Error(`Error updating document: ${(error as Error).message}`);
@@ -206,20 +180,22 @@ export const deleteDocument = async (
   docId: string
 ): Promise<void> => {
   try {
-    const docRef = doc(firebaseDB, collectionName, docId);
-    await deleteDoc(docRef);
+    const docRef = firebaseDB.collection(collectionName).doc(docId);
+    await docRef.delete();
   } catch (error) {
     throw new Error(`Error deleting document: ${(error as Error).message}`);
   }
 };
 
-export const queryDocuments = async <T = DocumentData>(
+// For more complex queries, you can chain methods directly
+export const queryDocuments = async <T = Record<string, any>>(
   collectionName: string,
-  ...constraints: QueryConstraint[]
+  queryBuilder: (ref: FirebaseFirestore.CollectionReference) => FirebaseFirestore.Query
 ): Promise<FirebaseDocument[]> => {
   try {
-    const q = query(collection(firebaseDB, collectionName), ...constraints);
-    const querySnapshot = await getDocs(q);
+    const collectionRef = firebaseDB.collection(collectionName);
+    const query = queryBuilder(collectionRef);
+    const querySnapshot = await query.get();
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     throw new Error(`Error querying documents: ${(error as Error).message}`);
