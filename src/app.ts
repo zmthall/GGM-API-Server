@@ -1,10 +1,13 @@
 import express from 'express'
 import path from 'path';
+import cors from 'cors';
+import 'dotenv/config';
+
+// Routing imports
 import mediaRouter from './routes/media.routes';
 import eventRouter from './routes/event.routes';
 import jobRouter from './routes/jobs.routes';
-import cors from 'cors';
-import 'dotenv/config';
+import recaptcha from './routes/recaptcha.routes';
 
 import { errorHandler } from './middlewares/errorHandler';
 
@@ -13,9 +16,12 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(express.static(path.join(__dirname, '../static')));
+
+// Routing
 app.use('/api/media', mediaRouter);
 app.use('/api/events', eventRouter)
 app.use('/api/jobs', jobRouter)
+app.use('/api/recaptcha', recaptcha)
 app.use(errorHandler);
 
 app.get('/', (req, res) => {

@@ -1,15 +1,15 @@
 import { Router } from 'express';
-import { getJobDescriptionByField } from '../controllers/job.controller';
+import { verifyRecaptcha } from '../controllers/recaptcha.controller';
 
 const router = Router();
 
 // Middleware
 import { authenticateKey } from '../middlewares/authenticateKey';
 
-router.get('/:select', getJobDescriptionByField);
+router.post('/verify', verifyRecaptcha);
 
 router.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', message: 'Job Routes are working.' });
+    res.status(200).json({ status: 'OK', message: 'Recaptcha Routes are working.' });
 })
 
 export default router;
