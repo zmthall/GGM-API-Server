@@ -9,7 +9,6 @@ export const getJobDescription = async (field: string, field_value: string) => {
           return null;
         }
         
-        // console.log(jobDescription)
         jobDescription.qualifications = jobDescription.qualifications.split('\n');
         jobDescription.shifts = jobDescription.shifts.split('\n');
         jobDescription.responsibilities = jobDescription.responsibilities.split('\n');

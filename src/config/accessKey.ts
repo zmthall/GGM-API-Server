@@ -1,4 +1,4 @@
 import 'dotenv/config';
 
-// config/accessKey.ts
+// Environment data for access key
 export const ACCESS_KEY = process.env.API_ACCESS_KEY;

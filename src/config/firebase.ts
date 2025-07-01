@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 import 'dotenv/config';
 
-// Initialize Admin SDK
+// Initialize Admin SDK - specific environment data needed for firebase
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({

@@ -4,7 +4,7 @@ import { getJobDescriptionByField } from '../controllers/job.controller';
 const router = Router();
 
 // Middleware
-import { authenticateKey } from '../middlewares/authenticateKey';
+// import { authenticateKey } from '../middlewares/authenticateKey';
 
 router.get('/:select', getJobDescriptionByField);
 

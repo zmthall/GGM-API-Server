@@ -8,6 +8,7 @@ import mediaRouter from './routes/media.routes';
 import eventRouter from './routes/event.routes';
 import jobRouter from './routes/jobs.routes';
 import recaptcha from './routes/recaptcha.routes';
+import email from './routes/email.routes'
 
 import { errorHandler } from './middlewares/errorHandler';
 
@@ -22,6 +23,7 @@ app.use('/api/media', mediaRouter);
 app.use('/api/events', eventRouter)
 app.use('/api/jobs', jobRouter)
 app.use('/api/recaptcha', recaptcha)
+app.use('/api/email', email)
 app.use(errorHandler);
 
 app.get('/', (req, res) => {
