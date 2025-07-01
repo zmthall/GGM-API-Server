@@ -2,6 +2,7 @@
 import nodemailer from 'nodemailer';
 import { nodeMailerEmail, nodeMailerPassword, nodeMailerContactFormEmail, nodeMailerContactFormCCEmails, nodeMailerRideRequestEmail, nodeMailerRideRequestCCEmails } from '../config/email';
 import { ContactFormData, EmailMessage, RideRequestData } from '../types/nodeMailer';
+import { formatDateTime } from '../helpers/dateFormat';
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -118,15 +119,13 @@ class EmailService {
           error: 'Email configuration is missing - no recipient email configured'
         };
       }
-      
-      console.log(nodeMailerContactFormCCEmails ? nodeMailerContactFormCCEmails.split(',').map(email => email.trim()) : undefined,)
 
       // Prepare email message
       const message: EmailMessage = {
         from: nodeMailerEmail,
         to: recipientEmail,
         cc: nodeMailerContactFormCCEmails ? nodeMailerContactFormCCEmails.split(',').map(email => email.trim()) : undefined,
-        subject: `Message From: ${contactData.first_name} ${contactData.last_name}`,
+        subject: `Message From: ${contactData.first_name} ${contactData.last_name} on ${formatDateTime(new Date())}`,
         text: `Reason: ${contactData.reason}\nName: ${contactData.first_name} ${contactData.last_name}\nEmail Address: ${contactData.email}\nPhone Number: ${contactData.phone}\nPreferred Contact Method: ${contactData.contact_method}\nMessage: ${contactData.message}`,
         html: `
           <p><strong>Reason:</strong> ${contactData.reason}</p>
@@ -173,14 +172,12 @@ class EmailService {
             const appointmentTime = new Date(rideData.apt_time);
             const dateOfBirth = new Date(rideData.dob);
 
-            console.log(nodeMailerRideRequestCCEmails ? nodeMailerRideRequestCCEmails.split(',').map(email => email.trim()) : undefined)
-
             // Prepare email message
             const message: EmailMessage = {
             from: nodeMailerEmail,
             to: recipientEmail,
             cc: nodeMailerRideRequestCCEmails ? nodeMailerRideRequestCCEmails.split(',').map(email => email.trim()) : undefined,
-            subject: `Ride Request From: ${rideData.name} on ${dateFormat.format(appointmentDate)} at ${timeFormat.format(appointmentTime)}`,
+            subject: `Ride Request From: ${rideData.name} on ${formatDateTime(new Date())}`,
             text: `Name: ${rideData.name}\nDate of Birth: ${dateFormat.format(dateOfBirth)}\nPhone Number: ${rideData.phone}\nEmail Address: ${rideData.email}\nMedicaid ID: ${rideData.med_id}\nAppointment Date: ${dateFormat.format(appointmentDate)}\nAppointment Time: ${timeFormat.format(appointmentTime)}\nPickup Location: ${rideData.pickup_address}\nDrop-Off Location: ${rideData.dropoff_address}\nNotes/Messages/Special Requirements: ${rideData.notes}`,
             html: `
                 <article style="font-size: 1.25rem;">
