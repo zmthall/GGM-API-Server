@@ -1,3 +1,4 @@
+// /controllers/event.controller.ts
 import * as eventService from '../services/event.services';
 import { Request, Response } from 'express';
 

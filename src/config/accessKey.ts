@@ -1,3 +1,4 @@
+// /config/accessKey.ts
 import 'dotenv/config';
 
 // Environment data for access key

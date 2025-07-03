@@ -1,3 +1,4 @@
+// /config/recaptchaKeys.ts
 import 'dotenv/config';
 
 // environmental keys that are needed for recaptcha

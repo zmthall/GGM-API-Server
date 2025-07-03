@@ -1,3 +1,4 @@
+// /services/job.services.ts
 import { getFirstDocumentByField } from "../helpers/firebase";
 import { JobDescription } from "../types/jobs";
 

@@ -1,3 +1,4 @@
+// /recaptcha.routes.ts
 import { Router } from 'express';
 import { verifyRecaptcha } from '../controllers/recaptcha.controller';
 

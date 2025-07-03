@@ -1,3 +1,4 @@
+// /services/event.services.ts
 import { validateEvent } from '../helpers/eventValidation';
 import { createDocument, deleteDocument, getDocument, getPaginatedDocuments, updateDocument } from '../helpers/firebase';
 import type { Event, PaginatedResult, PaginationOptions } from '../types/event'; 

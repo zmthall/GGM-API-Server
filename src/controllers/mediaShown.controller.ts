@@ -1,3 +1,4 @@
+// /controllers/mediaShown.controller.ts
 import { getSlotMap, replaceShownImageAtSlot, deleteShownImage, deleteAllShownImages } from '../services/mediaShown.services';
 
 import type { Request, Response } from 'express';
