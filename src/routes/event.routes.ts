@@ -30,7 +30,7 @@ router.put('/:id', authenticateKey, updateEvent);
 router.delete('/:id', authenticateKey, deleteEvent);
 router.put('/:id/archive', authenticateKey, archiveEvent); // archive/unarchive
 
-router.get('/health', (req, res) => {
+router.get('/route/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Event Routes are working.' });
 })
 

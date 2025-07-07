@@ -1,7 +1,7 @@
 // /routes/application.routes.ts
 import { Router } from 'express';
 import multer from 'multer';
-// import { submitApplication } from '../controllers/application.controller';
+import { submitApplication } from '../controllers/application.controller';
 
 const router = Router();
 
@@ -13,11 +13,13 @@ const upload = multer({
     }
 });
 
-// router.post('/submit', upload.any(), submitApplication);
+router.post('/submit', upload.any(), submitApplication);
 
-router.get('/health', (req, res) => {
+router.get('/route/health', (req, res) => {
     res.status(200).json({ 
         status: 'OK', 
         message: 'Application Routes are working.' 
     });
 });
+
+export default router;

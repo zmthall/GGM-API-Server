@@ -51,7 +51,7 @@ router.put('/community-shown/:slot', authenticateKey, tempUpload.single('file'),
 router.delete('/delete-shown/:slot', authenticateKey, deleteCommunityShownMedia);
 router.delete('/community/delete-shown/all', authenticateKey, deleteAllCommunityShownImages);
 
-router.get('/health', (req, res) => {
+router.get('/route/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Media Routes are working.' });
 })
 

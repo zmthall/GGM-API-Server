@@ -23,7 +23,7 @@ router.post('/ride-request', sendRideRequestEmail);
 router.get('/verify', verifyEmailConnection);
 
 // Health check
-router.get('/health', (req, res) => {
+router.get('/route/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
     message: 'Email routes are working.' 

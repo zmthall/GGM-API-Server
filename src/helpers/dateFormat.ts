@@ -31,3 +31,26 @@ export const formatDateTime = (dateInput: string | Date): string => {
   
   return `${month} ${day}${getOrdinalSuffix(day)}, ${year} at ${timeString}`;
 }
+
+export const formatSubmissionDate = (date: Date = new Date()): string => {
+    const month = date.getMonth() + 1; // getMonth() returns 0-11
+    const day = date.getDate();
+    const year = date.getFullYear();
+    
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    
+    // Determine AM/PM
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    
+    // Pad minutes and seconds with leading zeros
+    const minutesStr = minutes.toString().padStart(2, '0');
+    const secondsStr = seconds.toString().padStart(2, '0');
+    
+    return `${month}/${day}/${year}, ${hours}:${minutesStr}:${secondsStr} ${ampm}`;
+};
