@@ -54,3 +54,11 @@ export const formatSubmissionDate = (date: Date = new Date()): string => {
     
     return `${month}/${day}/${year}, ${hours}:${minutesStr}:${secondsStr} ${ampm}`;
 };
+
+export const convertISOToMMDDYYYY = (isoString: string): string => {
+  const date = new Date(isoString);
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+};

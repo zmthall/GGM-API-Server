@@ -1,4 +1,5 @@
 // /services/event.services.ts
+import { convertISOToMMDDYYYY } from '../helpers/dateFormat';
 import { validateEvent } from '../helpers/eventValidation';
 import { createDocument, deleteDocument, getDocument, getPaginatedDocuments, updateDocument } from '../helpers/firebase';
 import type { Event, PaginatedResult, PaginationOptions } from '../types/event'; 
@@ -15,7 +16,11 @@ export const createEvent = async (data: Omit<Event, 'id'>): Promise<Event> => {
     throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
   }
 
-  processedData.date = new Date(processedData.date).toISOString() // Ensure ISO format
+  processedData.date = new Date(processedData.date).toISOString();
+
+  if (processedData.dateTo) {
+    processedData.dateTo = new Date(processedData.dateTo).toISOString();
+  }
   
   try {
     const result = await createDocument('events', processedData);
@@ -46,42 +51,51 @@ export const getAllEvents = async (options: PaginationOptions = {}): Promise<Pag
       }
     );
 
-    // Transform the result to match your PaginatedResult interface
-    const hasNextPage = result.data.length === pageSize;
-    const hasPreviousPage = page > 1;
+    // Convert ISO dates back to MM/DD/YYYY for frontend display
+    const convertedData = result.data.map(event => ({
+      ...event,
+      date: convertISOToMMDDYYYY(event.date),
+      dateTo: event.dateTo ? convertISOToMMDDYYYY(event.dateTo) : undefined
+    }));
 
     return {
-      data: result.data,
-      pagination: {
-        currentPage: page,
-        pageSize,
-        hasNextPage,
-        hasPreviousPage,
-        // Optional: add these if you can get them from somewhere
-        totalPages: undefined,
-        totalCount: undefined
-      }
+      data: convertedData,
+      pagination: result.pagination
     };
   } catch (error) {
     throw new Error(`Failed to get events: ${(error as Error).message}`);
   }
 };
 
+// Do the same for getArchivedEvents
 export const getArchivedEvents = async (options: PaginationOptions = {}): Promise<PaginatedResult<Event>> => {
   try {
-    // Get archived events, ordered by date (most recent first)
+    const page = options.page || 1;
+    const pageSize = options.pageSize || 10;
+    
     const result = await getPaginatedDocuments<Event>(
       'events',
-      { archived: true }, // Filter for archived events only
+      { archived: true },
       {
-        pageSize: 10,
+        page,
+        pageSize,
         orderField: 'date',
         orderDirection: 'desc',
-        ...options // Allow overriding defaults
+        ...options
       }
     );
 
-    return result;
+    // Convert ISO dates back to MM/DD/YYYY for frontend display
+    const convertedData = result.data.map(event => ({
+      ...event,
+      date: convertISOToMMDDYYYY(event.date),
+      dateTo: event.dateTo ? convertISOToMMDDYYYY(event.dateTo) : undefined
+    }));
+
+    return {
+      data: convertedData,
+      pagination: result.pagination
+    };
   } catch (error) {
     throw new Error(`Failed to get archived events: ${(error as Error).message}`);
   }
@@ -110,14 +124,23 @@ export const updateEvent = async (id: string, data: Partial<Omit<Event, 'id'>>):
       return null;
     }
 
-    // Validate the update data (only validate provided fields)
+    // Validate the update data (only validate provided fields) - BEFORE ISO conversion
     const validation = validateEvent({ ...existingEvent, ...data });
     if (!validation.isValid) {
       throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
     }
 
-    // Update the document
-    await updateDocument('events', id, data);
+    // Convert dates to ISO format AFTER validation (same as createEvent)
+    const processedData = { ...data };
+    if (processedData.date) {
+      processedData.date = new Date(processedData.date).toISOString();
+    }
+    if (processedData.dateTo) {
+      processedData.dateTo = new Date(processedData.dateTo).toISOString();
+    }
+
+    // Update the document with processed data
+    await updateDocument('events', id, processedData);
     
     // Get the updated document to return the full event
     const updatedEvent = await getDocument('events', id);

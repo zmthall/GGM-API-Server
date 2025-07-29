@@ -124,7 +124,7 @@ export const getPaginatedDocuments = async <T>(
     const endIndex = startIndex + pageSize;
     const pageData = sortedDocs.slice(startIndex, endIndex);
     
-    // Check if there are more pages
+    // CORRECT logic: Check if there are more documents beyond this page
     const hasNextPage = endIndex < sortedDocs.length;
     const hasPreviousPage = page > 1;
 
