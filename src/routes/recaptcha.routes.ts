@@ -9,7 +9,7 @@ const router = Router();
 
 router.post('/verify', verifyRecaptcha);
 
-router.get('/health', (req, res) => {
+router.get('/route/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Recaptcha Routes are working.' });
 })
 
