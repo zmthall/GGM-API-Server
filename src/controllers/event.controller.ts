@@ -21,18 +21,17 @@ export const createEvent = async (req: Request, res: Response) => {
 
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
-    const pageSize = parseInt(req.query.pageSize as string) || 10;
+    // Read both page and limit/pageSize parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 5;
+
+    const result = await eventService.getAllEvents({ page, pageSize });
     
-    const result = await eventService.getAllEvents({ pageSize });
-    
+    // Return the format your frontend expects
     res.json({
       success: true,
       data: result.data,
-      pagination: {
-        hasNextPage: result.hasNextPage,
-        pageSize,
-        count: result.data.length
-      }
+      pagination: result.pagination
     });
   } catch (error) {
     res.status(500).json({
@@ -44,18 +43,16 @@ export const getAllEvents = async (req: Request, res: Response) => {
 
 export const getArchivedEvents = async (req: Request, res: Response) => {
   try {
-    const pageSize = parseInt(req.query.pageSize as string) || 10;
+    // Updated to match the same pattern as getAllEvents
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
     
-    const result = await eventService.getArchivedEvents({ pageSize });
+    const result = await eventService.getArchivedEvents({ page, pageSize });
     
     res.json({
       success: true,
       data: result.data,
-      pagination: {
-        hasNextPage: result.hasNextPage,
-        pageSize,
-        count: result.data.length
-      }
+      pagination: result.pagination
     });
   } catch (error) {
     res.status(500).json({
@@ -174,4 +171,4 @@ export const archiveEvent = async (req: Request, res: Response) => {
       message: (error as Error).message
     });
   }
-};
+}

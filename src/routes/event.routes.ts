@@ -16,7 +16,7 @@ import { authenticateKey } from '../middlewares/authenticateKey';
 const router = Router();
 
 // POST - http://127.0.0.1:4000/api/events | Adds a new event to the firebase database
-// GET -  http://127.0.0.1:4000/api/events | Fetches all events from the firebase database with pagination and 10 events per page
+// GET -  http://127.0.0.1:4000/api/events | Fetches all events from the firebase database with pagination and 5 events per page
 // GET -  http://127.0.0.1:4000/api/events/archived | Fetches all archived events from the firebase database with pagination and 10 events per page
 // GET - http://127.0.0.1:4000/api/events/:id | Fetches specific events by UUID
 // PUT - http://127.0.0.1:4000/api/events/:id | Updates specific event by UUID

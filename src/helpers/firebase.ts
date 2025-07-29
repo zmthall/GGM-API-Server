@@ -56,6 +56,7 @@ export const getAllDocuments = async <T = Record<string, any>>(
   }
 };
 
+// Simple approach: Get all documents and sort in JavaScript
 export const getPaginatedDocuments = async <T>(
   collectionName: string,
   filters: Record<string, any> = {},
@@ -64,7 +65,7 @@ export const getPaginatedDocuments = async <T>(
   try {
     const {
       pageSize = 10,
-      lastDoc,
+      page = 1,
       orderField = 'date',
       orderDirection = 'desc'
     } = options;
@@ -76,35 +77,70 @@ export const getPaginatedDocuments = async <T>(
       query = query.where(field, '==', value);
     });
 
-    // Add ordering and limit
-    query = query.orderBy(orderField, orderDirection).limit(pageSize + 1);
-
-    // Add pagination cursor if provided
-    if (lastDoc) {
-      query = query.startAfter(lastDoc);
-    }
-
+    // Get ALL documents (for small datasets this is fine)
     const querySnapshot = await query.get();
-    const docs = querySnapshot.docs;
-    
-    // Check if there's a next page
-    const hasNextPage = docs.length > pageSize;
-    
-    // Remove the extra document if it exists
-    const data = docs.slice(0, pageSize).map(doc => ({
+    const allDocs = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as T[];
 
-    // The last document for next pagination
-    const lastDocument = docs.length > 0 ? docs[Math.min(docs.length - 1, pageSize - 1)] : undefined;
+    // Sort in JavaScript
+    const sortedDocs = allDocs.sort((a, b) => {
+      const fieldA = (a as any)[orderField];
+      const fieldB = (b as any)[orderField];
+      
+      // Handle different data types
+      let valueA, valueB;
+      
+      if (fieldA instanceof Date) {
+        valueA = fieldA.getTime();
+      } else if (typeof fieldA === 'string') {
+        // Try to parse as date if it looks like an ISO string
+        const dateA = new Date(fieldA);
+        valueA = isNaN(dateA.getTime()) ? fieldA : dateA.getTime();
+      } else {
+        valueA = fieldA;
+      }
+      
+      if (fieldB instanceof Date) {
+        valueB = fieldB.getTime();
+      } else if (typeof fieldB === 'string') {
+        // Try to parse as date if it looks like an ISO string
+        const dateB = new Date(fieldB);
+        valueB = isNaN(dateB.getTime()) ? fieldB : dateB.getTime();
+      } else {
+        valueB = fieldB;
+      }
+
+      if (orderDirection === 'asc') {
+        return valueA > valueB ? 1 : -1;
+      } else {
+        return valueA < valueB ? 1 : -1;
+      }
+    });
+
+    // Apply pagination
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageData = sortedDocs.slice(startIndex, endIndex);
+    
+    // Check if there are more pages
+    const hasNextPage = endIndex < sortedDocs.length;
+    const hasPreviousPage = page > 1;
 
     return {
-      data,
-      hasNextPage,
-      lastDocument: hasNextPage ? lastDocument : undefined
+      data: pageData,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        hasNextPage,
+        hasPreviousPage,
+        totalPages: Math.ceil(sortedDocs.length / pageSize),
+        totalCount: sortedDocs.length
+      }
     };
   } catch (error) {
+    console.error('Pagination error:', error);
     throw new Error(`Failed to fetch paginated documents: ${(error as Error).message}`);
   }
 };

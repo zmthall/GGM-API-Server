@@ -4,17 +4,21 @@ import { createDocument, deleteDocument, getDocument, getPaginatedDocuments, upd
 import type { Event, PaginatedResult, PaginationOptions } from '../types/event'; 
 
 export const createEvent = async (data: Omit<Event, 'id'>): Promise<Event> => {
-  const validation = validateEvent(data);
+  // Convert date to ISO format if it's not already
+  const processedData = {
+    ...data,
+    archived: false
+  };
+
+  const validation = validateEvent(processedData);
   if (!validation.isValid) {
     throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
   }
 
+  processedData.date = new Date(processedData.date).toISOString() // Ensure ISO format
+  
   try {
-    // The createDocument helper already generates UUID and handles the creation
-    const result = await createDocument('events', {
-      ...data,
-      archived: false // Add archived field like your original function
-    });
+    const result = await createDocument('events', processedData);
     
     return {
       id: result.id,
@@ -27,19 +31,37 @@ export const createEvent = async (data: Omit<Event, 'id'>): Promise<Event> => {
 
 export const getAllEvents = async (options: PaginationOptions = {}): Promise<PaginatedResult<Event>> => {
   try {
-    // Get non-archived events, ordered by date (most recent first)
+    const page = options.page || 1;
+    const pageSize = options.pageSize || 5;
+    
     const result = await getPaginatedDocuments<Event>(
       'events',
-      { archived: false }, // Filter out archived events
+      { archived: false },
       {
-        pageSize: 10,
+        pageSize,
+        page,
         orderField: 'date',
-        orderDirection: 'desc',
-        ...options // Allow overriding defaults
+        orderDirection: 'asc',
+        ...options
       }
     );
 
-    return result;
+    // Transform the result to match your PaginatedResult interface
+    const hasNextPage = result.data.length === pageSize;
+    const hasPreviousPage = page > 1;
+
+    return {
+      data: result.data,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        hasNextPage,
+        hasPreviousPage,
+        // Optional: add these if you can get them from somewhere
+        totalPages: undefined,
+        totalCount: undefined
+      }
+    };
   } catch (error) {
     throw new Error(`Failed to get events: ${(error as Error).message}`);
   }
