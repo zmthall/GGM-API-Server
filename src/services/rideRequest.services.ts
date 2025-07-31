@@ -1,18 +1,18 @@
-// /services/contactForm.services.ts
+// /services/rideRequest.services.ts
 import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, updateDocument } from "../helpers/firebase";
-import { ContactFormDocument } from "../types/contactForm";
+import { RideRequestDocument } from "../types/rideRequest";
 import { PaginatedResult, PaginationOptions } from "../types/event";
 
-export const getAllContactForms = async (
+export const getAllRideRequests = async (
   filters: Record<string, any> = {},
   options: PaginationOptions = {}
-): Promise<PaginatedResult<ContactFormDocument>> => {
+): Promise<PaginatedResult<RideRequestDocument>> => {
   try {
     const page = options.page || 1;
     const pageSize = options.pageSize || 5;
     
-    const result = await getPaginatedDocuments<ContactFormDocument>(
-      'contact_messages',
+    const result = await getPaginatedDocuments<RideRequestDocument>(
+      'ride_requests',
       filters, // Dynamic filters
       {
         pageSize,
@@ -28,24 +28,24 @@ export const getAllContactForms = async (
       pagination: result.pagination
     };
   } catch (error) {
-    throw new Error(`Failed to get contact forms: ${(error as Error).message}`);
+    throw new Error(`Failed to get ride requests: ${(error as Error).message}`);
   }
 };
 
-export const getContactFormById = async (id: string): Promise<ContactFormDocument | null> => {
+export const getRideRequestById = async (id: string): Promise<RideRequestDocument | null> => {
   try {
-    const result = await getDocument('contact_messages', id);
-    return result as ContactFormDocument | null;
+    const result = await getDocument('ride_requests', id);
+    return result as RideRequestDocument | null;
   } catch (error) {
-    throw new Error(`Failed to get contact form: ${(error as Error).message}`);
+    throw new Error(`Failed to get ride request: ${(error as Error).message}`);
   }
 };
 
-export const getContactFormsByDate = async (
+export const getRideRequestsByDate = async (
   date: string,
   filters: Record<string, any> = {},
   options: PaginationOptions = {}
-): Promise<PaginatedResult<ContactFormDocument>> => {
+): Promise<PaginatedResult<RideRequestDocument>> => {
   try {
     const page = options.page || 1;
     const pageSize = options.pageSize || 10;
@@ -55,8 +55,8 @@ export const getContactFormsByDate = async (
     const startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0, 0));
     const endDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 23, 59, 59, 999));
     
-    const result = await getPaginatedDocumentsByDateRange<ContactFormDocument>(
-      'contact_messages',
+    const result = await getPaginatedDocumentsByDateRange<RideRequestDocument>(
+      'ride_requests',
       'created_at',
       startDate.toISOString(),
       endDate.toISOString(),
@@ -72,11 +72,11 @@ export const getContactFormsByDate = async (
     return result;
   } catch (error) {
     console.error('Date query error:', error);
-    throw new Error(`Failed to get contact forms by date: ${(error as Error).message}`);
+    throw new Error(`Failed to get ride requests by date: ${(error as Error).message}`);
   }
 };
 
-export const updateContactFormStatus = async (
+export const updateRideRequestStatus = async (
   id: string, 
   status: 'new' | 'completed' | 'reviewing' | 'declined'
 ): Promise<{ id: string; status: string; updated_at: string }> => {
@@ -86,27 +86,27 @@ export const updateContactFormStatus = async (
       updated_at: new Date().toISOString()
     };
 
-    const result = await updateDocument('contact_messages', id, updateData);
+    const result = await updateDocument('ride_requests', id, updateData);
     return result;
   } catch (error) {
-    throw new Error(`Failed to update contact form status: ${(error as Error).message}`);
+    throw new Error(`Failed to update ride request status: ${(error as Error).message}`);
   }
 };
 
-export const addTagsToContactForm = async (
+export const addTagsToRideRequest = async (
   id: string, 
   newTags: string[]
 ): Promise<{ id: string; tags: string[]; updated_at: string }> => {
   try {
-    // First get the existing contact form to get current tags
-    const existingContactForm = await getDocument('contact_messages', id);
+    // First get the existing ride request to get current tags
+    const existingRideRequest = await getDocument('ride_requests', id);
     
-    if (!existingContactForm) {
-      throw new Error('Contact form not found');
+    if (!existingRideRequest) {
+      throw new Error('Ride request not found');
     }
 
     // Get existing tags or default to empty array
-    const existingTags = existingContactForm.tags || [];
+    const existingTags = existingRideRequest.tags || [];
     
     // Combine existing tags with new tags and remove duplicates
     const updatedTags = [...new Set([...existingTags, ...newTags])];
@@ -116,17 +116,17 @@ export const addTagsToContactForm = async (
       updated_at: new Date().toISOString()
     };
 
-    const result = await updateDocument('contact_messages', id, updateData);
+    const result = await updateDocument('ride_requests', id, updateData);
     return result;
   } catch (error) {
-    throw new Error(`Failed to add tags to contact form: ${(error as Error).message}`);
+    throw new Error(`Failed to add tags to ride request: ${(error as Error).message}`);
   }
 };
 
-export const deleteContactForm = async (id: string): Promise<void> => {
+export const deleteRideRequest = async (id: string): Promise<void> => {
   try {
-    await deleteDocument('contact_messages', id);
+    await deleteDocument('ride_requests', id);
   } catch (error) {
-    throw new Error(`Failed to delete contact form: ${(error as Error).message}`);
+    throw new Error(`Failed to delete ride request: ${(error as Error).message}`);
   }
 };
