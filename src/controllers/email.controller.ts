@@ -1,6 +1,7 @@
 // /controllers/email.controller.ts
 import { Request, Response } from 'express';
 import * as emailService from '../services/email.services';
+import { saveEmailData, updateDocument } from '../helpers/firebase';
 
 export const sendSingleEmail = async (req: Request, res: Response) => {
   try {
@@ -79,6 +80,8 @@ export const verifyEmailConnection = async (req: Request, res: Response) => {
 };
 
 export const sendContactFormEmail = async (req: Request, res: Response) => {
+  let documentId: string | undefined;
+  
   try {
     const contactData = req.body;
     
@@ -94,30 +97,85 @@ export const sendContactFormEmail = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await emailService.emailService.sendContactFormEmail(contactData);
+    // Step 1: Save to database
+    try {
+      const saveResult = await saveEmailData(contactData, 'contact_messages');
+      documentId = saveResult.id;
+    } catch (dbError) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to save contact form data',
+        error: (dbError as Error).message
+      });
+      return;
+    }
+
+    // Step 2: Send email
+    const emailResult = await emailService.emailService.sendContactFormEmail(contactData);
     
-    if (result.success) {
+    // Step 3: Update database record with email status
+    try {
+      if (emailResult.success) {
+        const updateData = {
+          email_status: 'email_sent',
+          email_sent_at: new Date().toISOString(),
+          ...(emailResult.messageId && { message_id: emailResult.messageId })
+        };
+        await updateDocument('contact_messages', documentId, updateData);
+      } else {
+        const updateData = {
+          email_status: 'email_failed',
+          email_failed_at: new Date().toISOString(),
+          ...(emailResult.error && { email_error: emailResult.error })
+        };
+        await updateDocument('contact_messages', documentId, updateData);
+      }
+    } catch (updateError) {
+      console.error('Failed to update contact form status:', updateError);
+      // Don't fail the whole request for this
+    }
+
+    // Return response based on email result
+    if (emailResult.success) {
       res.status(200).json({
         success: true,
         message: 'Contact form email sent successfully',
-        messageId: result.messageId
+        messageId: emailResult.messageId,
+        contactId: documentId
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error || 'Failed to send contact form email'
+        message: emailResult.error || 'Failed to send contact form email',
+        contactId: documentId
       });
     }
   } catch (error) {
+    // If we have a document ID but something failed, mark it as failed
+    if (documentId) {
+      try {
+        await updateDocument('contact_messages', documentId, {
+          status: 'processing_failed',
+          error_message: (error as Error).message,
+          failed_at: new Date().toISOString()
+        });
+      } catch (updateError) {
+        console.error('Failed to mark document as failed:', updateError);
+      }
+    }
+
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      error: (error as Error).message
+      error: (error as Error).message,
+      ...(documentId && { contactId: documentId })
     });
   }
 };
 
 export const sendRideRequestEmail = async (req: Request, res: Response) => {
+  let documentId: string | undefined;
+  
   try {
     const rideData = req.body;
     
@@ -146,25 +204,80 @@ export const sendRideRequestEmail = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await emailService.emailService.sendRideRequestEmail(rideData);
+    // Step 1: Save to database
+    try {
+      const saveResult = await saveEmailData(rideData, 'ride_requests', {
+        contact_type: 'Ride Request'
+      });
+      documentId = saveResult.id;
+    } catch (dbError) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to save ride request data',
+        error: (dbError as Error).message
+      });
+      return;
+    }
+
+    // Step 2: Send email
+    const emailResult = await emailService.emailService.sendRideRequestEmail(rideData);
     
-    if (result.success) {
+    // Step 3: Update database record with email status
+    try {
+      if (emailResult.success) {
+        const updateData = {
+          email_status: 'email_sent',
+          email_sent_at: new Date().toISOString(),
+          ...(emailResult.messageId && { message_id: emailResult.messageId })
+        };
+        await updateDocument('ride_requests', documentId, updateData);
+      } else {
+        const updateData = {
+          email_status: 'email_failed',
+          email_failed_at: new Date().toISOString(),
+          ...(emailResult.error && { email_error: emailResult.error })
+        };
+        await updateDocument('ride_requests', documentId, updateData);
+      }
+    } catch (updateError) {
+      console.error('Failed to update ride request status:', updateError);
+      // Don't fail the whole request for this
+    }
+
+    // Return response based on email result
+    if (emailResult.success) {
       res.status(200).json({
         success: true,
         message: 'Ride request email sent successfully',
-        messageId: result.messageId
+        messageId: emailResult.messageId,
+        rideRequestId: documentId
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error || 'Failed to send ride request email'
+        message: emailResult.error || 'Failed to send ride request email',
+        rideRequestId: documentId
       });
     }
   } catch (error) {
+    // If we have a document ID but something failed, mark it as failed
+    if (documentId) {
+      try {
+        await updateDocument('ride_requests', documentId, {
+          status: 'processing_failed',
+          error_message: (error as Error).message,
+          failed_at: new Date().toISOString()
+        });
+      } catch (updateError) {
+        console.error('Failed to mark document as failed:', updateError);
+      }
+    }
+
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      error: (error as Error).message
+      error: (error as Error).message,
+      ...(documentId && { rideRequestId: documentId })
     });
   }
 };

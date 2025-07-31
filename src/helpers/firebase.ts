@@ -145,6 +145,96 @@ export const getPaginatedDocuments = async <T>(
   }
 };
 
+export const getDocumentsByDateRange = async <T = Record<string, any>>(
+  collectionName: string,
+  dateField: string,
+  startDate: string,
+  endDate: string,
+  additionalFilters: Record<string, any> = {}
+): Promise<FirebaseDocument[]> => {
+  try {
+    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = firebaseDB.collection(collectionName);
+    
+    // Apply date range filters
+    query = query.where(dateField, '>=', startDate);
+    query = query.where(dateField, '<=', endDate);
+    
+    // Apply additional filters
+    Object.entries(additionalFilters).forEach(([field, value]) => {
+      query = query.where(field, '==', value);
+    });
+    
+    // Order by the date field
+    query = query.orderBy(dateField, 'desc');
+    
+    const querySnapshot = await query.get();
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    throw new Error(`Error getting documents by date range: ${(error as Error).message}`);
+  }
+};
+
+export const getPaginatedDocumentsByDateRange = async <T>(
+  collectionName: string,
+  dateField: string,
+  startDate: string,
+  endDate: string,
+  additionalFilters: Record<string, any> = {},
+  options: PaginationOptions = {}
+): Promise<PaginatedResult<T>> => {
+  try {
+    const {
+      pageSize = 10,
+      page = 1,
+      orderDirection = 'desc'
+    } = options;
+
+    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = firebaseDB.collection(collectionName);
+    
+    // Apply date range filters
+    query = query.where(dateField, '>=', startDate);
+    query = query.where(dateField, '<=', endDate);
+    
+    // Apply additional filters
+    Object.entries(additionalFilters).forEach(([field, value]) => {
+      query = query.where(field, '==', value);
+    });
+    
+    // Order by the date field
+    query = query.orderBy(dateField, orderDirection);
+    
+    // Get all documents (for small datasets this is fine)
+    const querySnapshot = await query.get();
+    const allDocs = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as T[];
+
+    // Apply pagination
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageData = allDocs.slice(startIndex, endIndex);
+    
+    const hasNextPage = endIndex < allDocs.length;
+    const hasPreviousPage = page > 1;
+
+    return {
+      data: pageData,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        hasNextPage,
+        hasPreviousPage,
+        totalPages: Math.ceil(allDocs.length / pageSize),
+        totalCount: allDocs.length
+      }
+    };
+  } catch (error) {
+    console.error('Date range pagination error:', error);
+    throw new Error(`Failed to fetch paginated documents by date range: ${(error as Error).message}`);
+  }
+};
+
 export const getDocumentsByField = async <T = Record<string, any>>(
   collectionName: string,
   fieldName: string,
@@ -235,5 +325,39 @@ export const queryDocuments = async <T = Record<string, any>>(
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     throw new Error(`Error querying documents: ${(error as Error).message}`);
+  }
+};
+
+export const saveEmailData = async <T extends Record<string, any>>(
+  emailData: T,
+  collectionName: string = 'contact_messages',
+  options: {
+    contact_type?: string;
+    tags?: string[];
+    status?: string;
+    additionalFields?: Record<string, any>;
+  } = {}
+): Promise<{ id: string; data: any }> => {
+  try {
+    const {
+      contact_type = 'Contact Form',
+      tags = [],
+      status = 'new',
+      additionalFields = {}
+    } = options;
+
+    const documentData = {
+      contact_type,
+      ...emailData,
+      tags,
+      created_at: new Date().toISOString(),
+      status,
+      ...additionalFields
+    };
+
+    const result = await createDocument(collectionName, documentData);
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to save email data: ${(error as Error).message}`);
   }
 };

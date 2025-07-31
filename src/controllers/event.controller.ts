@@ -1,6 +1,6 @@
 // /controllers/event.controller.ts
 import * as eventService from '../services/event.services';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
 export const createEvent = async (req: Request, res: Response) => {
   try {

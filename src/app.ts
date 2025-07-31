@@ -10,6 +10,7 @@ import jobRouter from './routes/jobs.routes';
 import recaptcha from './routes/recaptcha.routes';
 import email from './routes/email.routes'
 import application from './routes/application.routes';
+import contactForm from './routes/contactForm.routes';
 
 import { errorHandler } from './middlewares/errorHandler';
 
@@ -23,9 +24,10 @@ app.use(express.static(path.join(__dirname, '../static')));
 app.use('/api/media', mediaRouter);
 app.use('/api/events', eventRouter)
 app.use('/api/jobs', jobRouter)
-app.use('/api/recaptcha', recaptcha)
-app.use('/api/email', email)
-app.use('/api/application', application)
+app.use('/api/recaptcha', recaptcha);
+app.use('/api/email', email);
+app.use('/api/application', application);
+app.use('/api/contact-form', contactForm);
 app.use(errorHandler);
 
 app.get('/', (req, res) => {
