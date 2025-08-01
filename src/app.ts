@@ -12,6 +12,7 @@ import email from './routes/email.routes'
 import application from './routes/application.routes';
 import contactForm from './routes/contactForm.routes';
 import rideRequest from './routes/rideRequest.routes';
+import userManagement from './routes/userManagement.routes';
 
 import { errorHandler } from './middlewares/errorHandler';
 
@@ -29,7 +30,8 @@ app.use('/api/recaptcha', recaptcha);
 app.use('/api/email', email);
 app.use('/api/application', application);
 app.use('/api/contact-form', contactForm);
-app.use('/api/ride-request', rideRequest)
+app.use('/api/ride-request', rideRequest);
+app.use('/api/users', userManagement);
 app.use(errorHandler);
 
 app.get('/', (req, res) => {

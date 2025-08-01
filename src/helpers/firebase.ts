@@ -1,5 +1,5 @@
 // helpers/firebaseHelpers.ts
-import { firebaseDB } from '../config/firebase';
+import { firebaseAuth, firebaseDB } from '../config/firebase';
 import type { FirebaseDocument, CreateDocumentResult } from '../types/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import type { PaginatedResult, PaginationOptions } from '../types/event';
@@ -359,5 +359,80 @@ export const saveEmailData = async <T extends Record<string, any>>(
     return result;
   } catch (error) {
     throw new Error(`Failed to save email data: ${(error as Error).message}`);
+  }
+};
+
+// user related helpers
+export const createFirebaseUser = async (userData: {
+  email: string;
+  password: string;
+  displayName?: string;
+}): Promise<{ uid: string; email: string; displayName?: string }> => {
+  try {
+    const userRecord = await firebaseAuth.createUser({
+      email: userData.email,
+      password: userData.password,
+      displayName: userData.displayName,
+      emailVerified: false
+    });
+
+    return {
+      uid: userRecord.uid,
+      email: userRecord.email || userData.email,
+      displayName: userRecord.displayName
+    };
+  } catch (error) {
+    throw new Error(`Error creating Firebase user: ${(error as Error).message}`);
+  }
+};
+
+export const generateEmailVerification = async (email: string): Promise<string> => {
+  try {
+    const link = await firebaseAuth.generateEmailVerificationLink(email);
+    
+    console.log(`Verification email link generated for user ${email}: ${link}`);
+    return link;
+  } catch (error) {
+    throw new Error(`Error generating verification email: ${(error as Error).message}`);
+  }
+};
+
+export const generatePasswordReset = async (email: string): Promise<string> => {
+  try {
+    const link = await firebaseAuth.generatePasswordResetLink(email);
+    console.log(`Password reset link generated for ${email}: ${link}`);
+    return link;
+  } catch (error) {
+    throw new Error(`Error generating password reset: ${(error as Error).message}`);
+  }
+};
+
+export const deleteFirebaseUser = async (uid: string): Promise<void> => {
+  try {
+    await firebaseAuth.deleteUser(uid);
+  } catch (error) {
+    throw new Error(`Error deleting Firebase user: ${(error as Error).message}`);
+  }
+};
+
+export const updateFirebaseUser = async (
+  uid: string, 
+  updates: { email?: string; displayName?: string; password?: string }
+): Promise<void> => {
+  try {
+    await firebaseAuth.updateUser(uid, updates);
+  } catch (error) {
+    throw new Error(`Error updating Firebase user: ${(error as Error).message}`);
+  }
+};
+
+export const testAdminSDK = async () => {
+  try {
+    const listUsers = await firebaseAuth.listUsers(1);
+    console.log('Admin SDK working - found users:', listUsers.users.length);
+    return true;
+  } catch (error) {
+    console.error('Admin SDK error:', error);
+    return false;
   }
 };
