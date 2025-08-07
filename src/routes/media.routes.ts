@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 
 // Middleware
-import { authenticateKey } from '../middlewares/authenticateKey';
+import { verifyFirebaseToken } from '../middlewares/verifyFirebaseToken';
 
 // Instantiation of router
 const router = express.Router();
@@ -30,12 +30,12 @@ const communityStorage = multer.diskStorage({
 
 const communityUpload = multer({ storage: communityStorage });
 
-router.post('/community-upload', authenticateKey, communityUpload.fields([
+router.post('/community-upload', verifyFirebaseToken, communityUpload.fields([
     { name: 'single', maxCount: 1 },
     { name: 'multi', maxCount: 25 }
 ]), uploadCommunityMedia);
 
-router.delete('/delete-upload/:uuid', authenticateKey, deleteCommunityImage);
+router.delete('/delete-upload/:uuid', verifyFirebaseToken, deleteCommunityImage);
 
 // Shown Community Media
 const tempUpload = multer({ dest: 'uploads/temp/' });
@@ -47,9 +47,9 @@ import { getCommunityShown, updateCommunityShown, deleteCommunityShownMedia, del
 // DELETE - http://127.0.0.1:4000/api/media/delete-shown/:slot | Deletes specific slot files and .json files
 // DELETE - http://127.0.0.1:4000/api/media/community/delete-shown/all | Deletes all slot files and .json files
 router.get('/community-shown', getCommunityShown);
-router.put('/community-shown/:slot', authenticateKey, tempUpload.single('file'), updateCommunityShown);
-router.delete('/delete-shown/:slot', authenticateKey, deleteCommunityShownMedia);
-router.delete('/community/delete-shown/all', authenticateKey, deleteAllCommunityShownImages);
+router.put('/community-shown/:slot', verifyFirebaseToken, tempUpload.single('file'), updateCommunityShown);
+router.delete('/delete-shown/:slot', verifyFirebaseToken, deleteCommunityShownMedia);
+router.delete('/community/delete-shown/all', verifyFirebaseToken, deleteAllCommunityShownImages);
 
 router.get('/route/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Media Routes are working.' });
