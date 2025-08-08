@@ -8,8 +8,15 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-const PORT = process.env.PORT || 4000;
+const STATUS = process.env.STATUS || 'prod'
+const PORT = parseInt(process.env.PORT || '4000', 10)
 
-app.listen(PORT, () => {
-    console.log(`API successfully running on ${process.env.BASE_URL}:${PORT}`)
-})
+if (STATUS === 'dev') {
+  app.listen(PORT, '127.0.0.1', () => {
+    console.log(`🚀 Server running in ${STATUS} mode on http://127.0.0.1:${PORT}`)
+  })
+} else {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running in ${STATUS} mode on port ${PORT}`)
+  })
+}

@@ -38,6 +38,7 @@ export const updateCommunityShown = (req: Request, res: Response) => {
   try {
     const filename = replaceShownImageAtSlot(slot, file, alt); // ✅ pass `alt` here
     res.status(200).json({
+      success: true,
       message: `Slot ${slot} updated`,
       filename,
       alt: alt || null,
@@ -45,7 +46,11 @@ export const updateCommunityShown = (req: Request, res: Response) => {
 
     return;
   } catch (error: any) {
-    res.status(400).json({ message: 'Upload failed', error: error.message });
+    res.status(400).json({ 
+      success: false,
+      message: 'Upload failed', 
+      error: error.message 
+    });
     
     return;
   }
