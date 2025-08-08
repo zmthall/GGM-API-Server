@@ -8,8 +8,6 @@ import fs from 'fs';
 export const getCommunityShown = (req: Request, res: Response) => {
   const slotMap = getSlotMap();
   res.json({ slots: slotMap });
-
-  return;
 };
 
 export const updateCommunityShown = (req: Request, res: Response) => {
@@ -65,11 +63,17 @@ export const deleteCommunityShownMedia = async (req: Request, res: Response) => 
 
   try {
     deleteShownImage(slotNumber);
-    res.status(200).json({ message: `Image in slot ${slotNumber} deleted.` });
+    res.status(200).json({ 
+      success: true,
+      message: `Image in slot ${slotNumber} deleted.` 
+    });
 
     return;
   } catch (error: any) {
-    res.status(500).json({ message: 'Delete failed', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Delete failed', error: error.message 
+    });
 
     return;
   }
