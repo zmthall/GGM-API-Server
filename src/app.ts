@@ -19,7 +19,8 @@ import { errorHandler } from './middlewares/errorHandler';
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+const uploadsPath = path.resolve(__dirname, 'uploads'); // Points to dist/uploads
+app.use('/uploads', express.static(uploadsPath));
 app.use(express.static(path.join(__dirname, '../static')));
 
 // Routing
