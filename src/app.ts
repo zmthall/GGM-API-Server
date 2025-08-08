@@ -5,6 +5,7 @@ import 'dotenv/config';
 
 const allowedOrigins = [
   'https://goldengatemanor.com',
+  'https://dev.goldengatemanor.com',
   'http://localhost:3000',
   'http://127.0.0.1:3000'
 ];
