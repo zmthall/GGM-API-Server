@@ -40,13 +40,15 @@ router.delete('/delete-upload/:uuid', verifyFirebaseToken, deleteCommunityImage)
 // Shown Community Media
 const tempUpload = multer({ dest: 'uploads/temp/' });
 
-import { getCommunityShown, updateCommunityShown, deleteCommunityShownMedia, deleteAllCommunityShownImages } from '../controllers/mediaShown.controller';
+import { getCommunityShown, updateCommunityShown, deleteCommunityShownMedia, deleteAllCommunityShownImages, getCommunityShownImage } from '../controllers/mediaShown.controller';
 
 // GET - http://127.0.0.1:4000/api/media/community-shown | Gets all shown media slots and alts
+// GET - http://127.0.0.1:4000/api/media/community-shown/image/:slot | Gets shown media by slot
 // PUT - http://127.0.0.1:4000/api/media/community-shown/:slot | Updates specific slot locations with other images
 // DELETE - http://127.0.0.1:4000/api/media/delete-shown/:slot | Deletes specific slot files and .json files
 // DELETE - http://127.0.0.1:4000/api/media/community/delete-shown/all | Deletes all slot files and .json files
 router.get('/community-shown', getCommunityShown);
+router.get('/community-shown/image/:slot', getCommunityShownImage);
 router.put('/community-shown/:slot', verifyFirebaseToken, tempUpload.single('file'), updateCommunityShown);
 router.delete('/delete-shown/:slot', verifyFirebaseToken, deleteCommunityShownMedia);
 router.delete('/community/delete-shown/all', verifyFirebaseToken, deleteAllCommunityShownImages);

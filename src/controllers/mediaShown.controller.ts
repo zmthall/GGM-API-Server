@@ -1,5 +1,5 @@
 // /controllers/mediaShown.controller.ts
-import { getSlotMap, replaceShownImageAtSlot, deleteShownImage, deleteAllShownImages } from '../services/mediaShown.services';
+import { getSlotMap, replaceShownImageAtSlot, deleteShownImage, deleteAllShownImages, getSlotImage } from '../services/mediaShown.services';
 
 import type { Request, Response } from 'express';
 
@@ -53,6 +53,22 @@ export const updateCommunityShown = (req: Request, res: Response) => {
     });
     
     return;
+  }
+};
+
+export const getCommunityShownImage = (req: Request, res: Response) => {
+  const slot = parseInt(req.params.slot, 10);
+  
+  if (isNaN(slot) || slot < 0 || slot > 7) {
+    res.status(400).json({ message: 'Slot must be between 0 and 7' });
+    return;
+  }
+
+  try {
+    const imageData = getSlotImage(slot);
+    res.json({ success: true, ...imageData });
+  } catch (error: any) {
+    res.status(404).json({ success: false, message: error.message });
   }
 };
 

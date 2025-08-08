@@ -50,6 +50,48 @@ export const getSlotMap = () => {
   return slotMap;
 };
 
+// GET - single slot image file
+export const getSlotImage = (slot: number | string) => {
+  ensureShownDir();
+
+  const files = fs.readdirSync(SHOWN_DIR);
+  const file = files.find(f => f.startsWith(`${slot}.`) && ALLOWED_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+  
+  if (!file) {
+    throw new Error(`No image found for slot ${slot}`);
+  }
+
+  const filePath = path.join(SHOWN_DIR, file);
+  
+  // Get alt text
+  const altPath = path.join(SHOWN_DIR, `${slot}.json`);
+  let alt = null;
+  if (fs.existsSync(altPath)) {
+    try {
+      const altData = JSON.parse(fs.readFileSync(altPath, 'utf-8'));
+      alt = altData.alt || null;
+    } catch (err) {
+      console.error('Alt text read error:', err);
+      alt = null;
+    }
+  }
+
+  // Read file data
+  const fileStats = fs.statSync(filePath);
+  const fileData = fs.readFileSync(filePath);
+  
+  return {
+    slot: slot,
+    data: {
+      filename: path.basename(filePath),
+      size: fileStats.size,
+      type: `image/${path.extname(filePath).substring(1)}`,
+      fileBase64: fileData.toString('base64'),
+      alt: alt
+    }
+  };
+};
+
 // PUT - Update image at specific slot
 export const replaceShownImageAtSlot = (slot: number | string, file: Express.Multer.File, alt = null) => {
   const ext = path.extname(file.originalname).toLowerCase();

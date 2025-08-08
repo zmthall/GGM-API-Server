@@ -35,17 +35,7 @@ app.use(cors({
 app.use(express.json());
 
 const uploadsPath = path.resolve(__dirname, 'uploads');
-
-// CORS for static files - simplified
-app.use('/uploads', (req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET');
-  }
-  next();
-}, express.static(uploadsPath));
-app.use(express.static(path.join(__dirname, '../static')));
+app.use('/uploads', express.static(uploadsPath));
 
 // Routing
 app.use('/api/media', mediaRouter);
