@@ -3,6 +3,12 @@ import path from 'path';
 import cors from 'cors';
 import 'dotenv/config';
 
+const allowedOrigins = [
+  'https://goldengatemanor.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
 // Routing imports
 import mediaRouter from './routes/media.routes';
 import eventRouter from './routes/event.routes';
@@ -17,31 +23,25 @@ import userManagement from './routes/userManagement.routes';
 import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
+// CORS for API routes
 app.use(cors({
-    origin: [
-    'https://goldengatemanor.com',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-  ],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
-const uploadsPath = path.resolve(__dirname, 'uploads'); // Points to dist/uploads
 
+app.use(express.json());
+
+const uploadsPath = path.resolve(__dirname, 'uploads');
+
+// CORS for static files - simplified
 app.use('/uploads', (req, res, next) => {
-  const allowedOrigins = [
-    'https://goldengatemanor.com',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-  ];
-  
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET');
   }
-  
   next();
 }, express.static(uploadsPath));
 app.use(express.static(path.join(__dirname, '../static')));
