@@ -29,7 +29,21 @@ app.use(cors({
 }));
 app.use(express.json());
 const uploadsPath = path.resolve(__dirname, 'uploads'); // Points to dist/uploads
-app.use('/uploads', express.static(uploadsPath));
+
+app.use('/uploads', (req, res, next) => {
+  const allowedOrigins = [
+    'https://goldengatemanor.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ];
+  
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  next();
+}, express.static(uploadsPath));
 app.use(express.static(path.join(__dirname, '../static')));
 
 // Routing
