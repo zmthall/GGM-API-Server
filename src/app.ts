@@ -19,9 +19,13 @@ import { errorHandler } from './middlewares/errorHandler';
 const app = express();
 app.use(cors({
     origin: [
-        'https://dev.goldengatemanor.com',
-        'http://127.0.0.1:3000'
-    ]
+    'https://goldengatemanor.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 const uploadsPath = path.resolve(__dirname, 'uploads'); // Points to dist/uploads
