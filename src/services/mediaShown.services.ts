@@ -3,8 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { FULL_BASE_URL } from '../config/url';
 
-const SHOWN_DIR = path.resolve(__dirname, '../uploads/community/shown');
+const SHOWN_DIR = path.resolve('uploads/community/shown');
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+
+
 
 // Make sure directory exists
 export const ensureShownDir = () => {
@@ -38,7 +40,8 @@ export const getSlotMap = () => {
     slotMap[i] = file
       ? {
           id: file,
-          src: `${FULL_BASE_URL}/uploads/community/shown/${file}`,
+          src: `${FULL_BASE_URL}/uploads/community/shown/${file}?v=${Date.now()}`,
+          lastUpdated: new Date().toISOString(),
           alt
         }
       : null;
