@@ -6,9 +6,6 @@ import { FULL_BASE_URL } from '../config/url';
 const SHOWN_DIR = path.resolve('uploads/community/shown');
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
-const PORT = process.env.PORT || '4000';
-
 // Make sure directory exists
 export const ensureShownDir = () => {
   if (!fs.existsSync(SHOWN_DIR)) {
@@ -33,6 +30,7 @@ export const getSlotMap = () => {
         const altData = JSON.parse(fs.readFileSync(altPath, 'utf-8'));
         alt = altData.alt || null;
       } catch (err) {
+        console.error((err as Error).message)
         alt = null;
       }
     }
