@@ -17,7 +17,12 @@ import userManagement from './routes/userManagement.routes';
 import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://dev.goldengatemanor.com',
+        'http://127.0.0.1:3000'
+    ]
+}));
 app.use(express.json());
 const uploadsPath = path.resolve(__dirname, 'uploads'); // Points to dist/uploads
 app.use('/uploads', express.static(uploadsPath));
