@@ -6,7 +6,8 @@ import {
   createUser,
   deleteUser,
   getAllUsers,
-  updateUserRole
+  updateUserRole,
+  updateLastLogin
 } from '../controllers/userManagement.controller';
 
 const router = Router();
@@ -16,14 +17,15 @@ router.get('/route/health', (req, res) => {
 });
 
 // Admin-only routes
-router.post('/admin/users', verifyFirebaseToken, requireAdmin, createUser);
-router.delete('/admin/users/:uid', verifyFirebaseToken, requireAdmin, deleteUser);
-router.get('/admin/users', verifyFirebaseToken, requireAdmin, getAllUsers);
-router.put('/admin/users/:uid/role', verifyFirebaseToken, requireAdmin, updateUserRole);
+router.post('/admin/create-user', verifyFirebaseToken, requireAdmin, createUser);
+router.delete('/admin/delete-user/:uid', verifyFirebaseToken, requireAdmin, deleteUser);
+router.get('/admin/get-users', verifyFirebaseToken, requireAdmin, getAllUsers);
+router.put('/admin/edit-user/:uid/role', verifyFirebaseToken, requireAdmin, updateUserRole);
 
 // User profile routes
-// router.get('/profile/:uid', verifyFirebaseToken, getUserProfile);
-// router.put('/profile/:uid', verifyFirebaseToken, updateProfile);
+router.put('/update-login', verifyFirebaseToken, updateLastLogin)
+// router.get('/profile', verifyFirebaseToken, getUserProfile);
+// router.put('/profile', verifyFirebaseToken, updateProfile);
 // router.put('/profile/change-password', verifyFirebaseToken, changePassword);
 // router.post('/profile/send-verification', verifyFirebaseToken, sendEmailVerification);
 

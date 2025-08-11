@@ -207,3 +207,40 @@ export const updateUserRole = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const updateLastLogin = async (req: Request, res: Response) => {
+  try {
+    const uid = req.user?.uid;
+
+    if (!uid) {
+      res.status(400).json({
+        success: false,
+        message: 'User is not logged in.'
+      });
+      return;
+    }
+
+    // Check if user exists
+    const existingUser = await getDocument('users', uid);
+    if (!existingUser) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+      return;
+    }
+
+    const result = await userManagement.updateLastLogin(uid)
+
+    res.json({
+      success: true,
+      message: 'User login updated successfully',
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+}

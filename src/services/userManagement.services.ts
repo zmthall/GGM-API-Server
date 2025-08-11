@@ -15,10 +15,9 @@ export const createUser = async (
     // Create user profile in Firestore
     const userProfile = {
       email: userData.email,
-      displayName: userData.displayName,
+      displayName: userData.displayName || '',
       role: userData.role || 'user',
       status: 'active',
-      emailVerified: false,
       created_at: new Date().toISOString(),
       created_by: createdByUid
     };
@@ -52,7 +51,6 @@ export const deleteUser = async (uid: string): Promise<void> => {
 export const getAllUsers = async (): Promise<any[]> => {
   try {
     const users = await getAllDocuments('users');
-    console.log(users)
     return users;
   } catch (error) {
     throw new Error(`Failed to get all users: ${(error as Error).message}`);
@@ -75,3 +73,16 @@ export const updateUserRole = async (
     throw new Error(`Failed to update user role: ${(error as Error).message}`);
   }
 };
+
+export const updateLastLogin = async (uid: string):
+Promise<{ id: string; lastLogin: string; }> => { 
+  try {
+    const loginDate = (new Date()).toISOString();
+  
+    const result = await updateDocument('users', uid, {lastLogin: loginDate});
+  
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to last login date: ${(error as Error).message}`);
+  }
+}
