@@ -1,7 +1,7 @@
 // /services/contactForm.services.ts
 import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, updateDocument } from "../helpers/firebase";
 import { ContactFormDocument } from "../types/contactForm";
-import { PaginatedResult, PaginationOptions } from "../types/event";
+import { PaginatedResult, PaginationOptions } from "../types/pagination";
 
 export const getAllContactForms = async (
   filters: Record<string, any> = {},
@@ -51,7 +51,7 @@ export const getContactFormsByDate = async (
     const pageSize = options.pageSize || 10;
     
     // Parse the date as UTC to avoid timezone issues
-    const [year, month, day] = date.split('-');
+    const [month, day, year] = date.split('-');
     const startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0, 0));
     const endDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 23, 59, 59, 999));
     

@@ -90,20 +90,6 @@ export const getContactFormsByDate = async (req: Request, res: Response) => {
       return;
     }
 
-    // Convert MM-DD-YYYY to YYYY-MM-DD for Date constructor
-    const [month, day, year] = date.split('-');
-    const isoDateString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    
-    // Validate the converted date
-    const parsedDate = new Date(isoDateString);
-    if (isNaN(parsedDate.getTime())) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid date provided'
-      });
-      return;
-    }
-
     // Extract additional filters from query parameters
     const filters: Record<string, any> = {};
     if (req.query.status) filters.status = req.query.status;
@@ -111,7 +97,7 @@ export const getContactFormsByDate = async (req: Request, res: Response) => {
     if (req.query.reason) filters.reason = req.query.reason;
     if (req.query.contact_method) filters.contact_method = req.query.contact_method;
 
-    const result = await contactForm.getContactFormsByDate(isoDateString, filters, { page, pageSize });
+    const result = await contactForm.getContactFormsByDate(date, filters, { page, pageSize });
     
     res.json({
       success: true,

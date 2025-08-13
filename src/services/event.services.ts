@@ -2,7 +2,8 @@
 import { convertISOToMMDDYYYY } from '../helpers/dateFormat';
 import { validateEvent } from '../helpers/eventValidation';
 import { createDocument, deleteDocument, getDocument, getPaginatedDocuments, updateDocument } from '../helpers/firebase';
-import type { Event, PaginatedResult, PaginationOptions } from '../types/event'; 
+import type { Event } from '../types/event';
+import type { PaginatedResult, PaginationOptions } from '../types/pagination'; 
 
 export const createEvent = async (data: Omit<Event, 'id'>): Promise<Event> => {
   // Convert date to ISO format if it's not already
@@ -52,7 +53,7 @@ export const getAllEvents = async (options: PaginationOptions = {}): Promise<Pag
     );
 
     // Convert ISO dates back to MM/DD/YYYY for frontend display
-    const convertedData = result.data.map(event => ({
+    const convertedData = result.data.map((event: Event) => ({
       ...event,
       date: convertISOToMMDDYYYY(event.date),
       dateTo: event.dateTo ? convertISOToMMDDYYYY(event.dateTo) : undefined
@@ -86,7 +87,7 @@ export const getArchivedEvents = async (options: PaginationOptions = {}): Promis
     );
 
     // Convert ISO dates back to MM/DD/YYYY for frontend display
-    const convertedData = result.data.map(event => ({
+    const convertedData = result.data.map((event: Event) => ({
       ...event,
       date: convertISOToMMDDYYYY(event.date),
       dateTo: event.dateTo ? convertISOToMMDDYYYY(event.dateTo) : undefined

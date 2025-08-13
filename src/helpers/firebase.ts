@@ -2,7 +2,7 @@
 import { firebaseAuth, firebaseDB } from '../config/firebase';
 import type { FirebaseDocument, CreateDocumentResult } from '../types/firebase';
 import { v4 as uuidv4 } from 'uuid';
-import type { PaginatedResult, PaginationOptions } from '../types/event';
+import type { PaginatedResult, PaginationOptions } from '../types/pagination';
 
 export const createDocument = async <T extends Record<string, any>>(
   collectionName: string, 
