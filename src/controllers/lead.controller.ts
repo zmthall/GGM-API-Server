@@ -19,6 +19,23 @@ export const createLead = async (req: Request, res: Response) => {
   }
 };
 
+export const createMultipleLeads = async (req: Request, res: Response) => {
+  try {
+    const leads = await leadService.createMultipleLeads(req.body);
+
+    res.status(201).json({
+      success: true,
+      data: leads,
+      message: 'Lead created successfully'
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+}
+
 // controllers/lead.controller.ts
 export const getLeads = async (req: Request, res: Response) => {
   try {
@@ -128,6 +145,103 @@ export const getLeadsByFilters = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const updateLead = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const updatedLead = await leadService.updateLead(id, updateData);
+    
+    res.json({
+      success: true,
+      data: updatedLead,
+      message: 'Lead updated successfully'
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const updateLeadTag = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { tag } = req.body;
+
+    const updatedLead = await leadService.updateLeadTag(id, tag);
+    
+    res.json({
+      success: true,
+      data: updatedLead,
+      message: 'Lead tags updated successfully'
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const updateLeadStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const updatedLead = await leadService.updateLeadStatus(id, status);
+    
+    res.json({
+      success: true,
+      data: updatedLead,
+      message: 'Lead status updated successfully'
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const updateLeadStatusBulk = async (req: Request, res: Response) => {
+  try {
+    const { ids, status } = req.body;
+
+    const updatedLeads = await leadService.updateLeadStatusBulk(ids, status);
+    
+    res.json({
+      success: true,
+      data: updatedLeads,
+      message: `${updatedLeads.length} leads status updated successfully`
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const deleteLead = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    await leadService.deleteLead(id);
+    
+    res.json({
+      success: true,
+      message: 'Lead deleted successfully'
+    });
+  } catch (error) {
+    res.status(400).json({
       success: false,
       message: (error as Error).message
     });

@@ -18,6 +18,33 @@ export const createDocument = async <T extends Record<string, any>>(
   }
 };
 
+export const createDocumentsBatch = async <T extends Record<string, any>>(
+  collectionName: string,
+  dataArray: T[]
+): Promise<CreateDocumentResult<T>[]> => {
+  try {
+    const batch = firebaseDB.batch();
+    const results: CreateDocumentResult<T>[] = [];
+    
+    for (const data of dataArray) {
+      const customId = uuidv4();
+      const docRef = firebaseDB.collection(collectionName).doc(customId);
+      
+      batch.set(docRef, data);
+      
+      // Store the result we'll return
+      results.push({ id: customId, data });
+    }
+    
+    // Execute all writes atomically
+    await batch.commit();
+    
+    return results;
+  } catch (error) {
+    throw new Error(`Error creating documents in batch: ${(error as Error).message}`);
+  }
+};
+
 export const createDocumentWithId = async <T extends Record<string, any>>(
   collectionName: string,
   customId: string,

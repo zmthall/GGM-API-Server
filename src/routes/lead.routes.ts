@@ -9,13 +9,14 @@ import {
     getLeadsByFilters,
     // getLeadStats,
     createLead,
+    createMultipleLeads,
     // createLeadPDFAll,
     // createLeadPDF,
-    // updateLead,
-    // updateLeadTag,
-    // updateLeadStatus,
-    // updateLeadStatusBulk,
-    // deleteLead
+    updateLead,
+    updateLeadTag,
+    updateLeadStatus,
+    updateLeadStatusBulk,
+    deleteLead
 } from '../controllers/lead.controller';
 
 // Middleware
@@ -47,13 +48,14 @@ router.get('/status/:status', getLeadsByStatus)
 router.get('/filters', getLeadsByFilters)
 // router.get('/stats', getLeadStats)
 router.post('/', createLead);
+router.post('/multiple', createMultipleLeads);
 // router.post('/export/pdf/all', createLeadPDFAll)
 // router.post('/export/pdf', createLeadPDF)
-// router.put('/:id', updateLead);
-// router.put('/:id/tag', updateLeadTag);
-// router.put('/:id/status', updateLeadStatus);
-// router.put('/bulk/status', updateLeadStatusBulk)
-// router.delete('/:id', deleteLead);
+router.put('/:id', updateLead);
+router.put('/:id/tag', updateLeadTag);
+router.put('/bulk/status', updateLeadStatusBulk)
+router.put('/:id/status', updateLeadStatus);
+router.delete('/:id', deleteLead);
 
 router.get('/route/health', (_req, res) => {
     res.status(200).json({ status: 'OK', message: 'Lead Routes are working.' });
