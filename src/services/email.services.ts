@@ -137,8 +137,7 @@ class EmailService {
         `
       };
 
-      // const result = await this.sendEmail(message);
-      const result = { success: true }
+      const result = await this.sendEmail(message);
       return result;
     } catch (error) {
       console.error('Contact form email error:', error);
@@ -197,8 +196,7 @@ class EmailService {
             `
             };
 
-            // const result = await this.sendEmail(message);
-            const result = { success: true }
+            const result = await this.sendEmail(message);
             return result;
         } catch (error) {
             console.error('Ride request email error:', error);
