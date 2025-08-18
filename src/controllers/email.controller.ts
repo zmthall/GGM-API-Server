@@ -180,7 +180,7 @@ export const sendRideRequestEmail = async (req: Request, res: Response) => {
     const rideData = req.body;
     
     // Validate required fields
-    const requiredFields = ['name', 'dob', 'phone', 'email', 'med_id', 'apt_date', 'apt_time', 'pickup_address', 'dropoff_address', 'notes'];
+    const requiredFields = ['name', 'dob', 'phone', 'email', 'med_id', 'apt_date', 'apt_time', 'pickup_address', 'dropoff_address'];
     const missingFields = requiredFields.filter(field => !rideData[field]);
     
     if (missingFields.length > 0) {
