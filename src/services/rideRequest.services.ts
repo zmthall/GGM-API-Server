@@ -1,7 +1,7 @@
 // /services/rideRequest.services.ts
 import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, updateDocument } from "../helpers/firebase";
 import { RideRequestDocument } from "../types/rideRequest";
-import { PaginatedResult, PaginationOptions } from "../types/event";
+import { PaginatedResult, PaginationOptions } from "../types/pagination";
 
 export const getAllRideRequests = async (
   filters: Record<string, any> = {},
