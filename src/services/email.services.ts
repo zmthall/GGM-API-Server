@@ -120,6 +120,8 @@ class EmailService {
         };
       }
 
+      console.log(contactData.phone)
+
       // Prepare email message
       const message: EmailMessage = {
         from: nodeMailerEmail,

@@ -86,7 +86,7 @@ export const sendContactFormEmail = async (req: Request, res: Response) => {
     const contactData = req.body;
     
     // Validate required fields
-    const requiredFields = ['first_name', 'last_name', 'email', 'phone', 'reason', 'contact_method', 'message'];
+    const requiredFields = ['first_name', 'email', 'reason', 'contact_method', 'message'];
     const missingFields = requiredFields.filter(field => !contactData[field]);
     
     if (missingFields.length > 0) {
