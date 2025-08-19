@@ -4,19 +4,22 @@ import {
     getLeads,
     getLeadsByDate,
     getLeadsByDateRange,
-    // searchLeads,
+    searchLeads,
     getLeadsByStatus,
     getLeadsByFilters,
-    // getLeadStats,
+    getLeadStats,
+    getLeadById,
     createLead,
     createMultipleLeads,
-    // createLeadPDFAll,
-    // createLeadPDF,
+    createLeadPDFAll,
+    createLeadPDFById,
     updateLead,
     updateLeadTag,
     updateLeadStatus,
     updateLeadStatusBulk,
-    deleteLead
+    deleteLead,
+    createLeadPDFByDateRange,
+    createLeadPDFByDate
 } from '../controllers/lead.controller';
 
 // Middleware
@@ -27,14 +30,19 @@ const router = Router();
 
 // Administrative API Calls, requires firebaseToken for authentication
 // GET - http://127.0.0.1:4000/api/leads | Gets all leads from the firebase firestore
+// GET - http://127.0.0.1:4000/api/leads/:id | Gets lead by ID from firebase firestore
 // GET - http://127.0.0.1:4000/api/leads/:date | Gets leads from specific date
 // GET - http://127.0.0.1:4000/api/leads/range/:startDate/:endDate | Gets leads from specific date range
 // GET - http://127.0.0.1:4000/api/leads/search | Gets leads with specific search criteria
 // GET - http://127.0.0.1:4000/api/leads/status/:status | Gets leads with specific status
+// GET - http://127.0.0.1:4000/api/leads/filters | Gets leads with specific filters
 // GET - http://127.0.0.1:4000/api/leads/stats | Gets lead statistics
 // POST - http://127.0.0.1:4000/api/leads | Adds a new lead to the firebase firestore
+// POST - http://127.0.0.1:4000/api/leads/multiple | Adds multiple new leads to the firebase firestore
 // POST - http://127.0.0.1:4000/api/leads/export/pdf/all | Exports all lead information as PDF 
-// POST - http://127.0.0.1:4000/api/leads/export/pdf | Exports selected lead information as PDF using UUIDs
+// POST - http://127.0.0.1:4000/api/leads/export/pdf/date-range | Exports lead information as PDF for leads in a date range
+// POST - http://127.0.0.1:4000/api/leads/export/pdf/:date | Exports lead information as PDF for leads on a date
+// POST - http://127.0.0.1:4000/api/leads/:id/export/pdf | Exports selected lead information as PDF using UUIDs
 // PUT - http://127.0.0.1:4000/api/leads/:id | Updates specific lead information by UUID
 // PUT - http://127.0.0.1:4000/api/leads/:id/tag | Adds / Updates specific tags on lead by UUID
 // PUT - http://127.0.0.1:4000/api/leads/:id/status | Updates status on lead by UUID
@@ -43,14 +51,17 @@ const router = Router();
 router.get('/', getLeads)
 router.get('/date/:date', getLeadsByDate)
 router.get('/range/:startDate/:endDate', getLeadsByDateRange)
-// router.get('/search', searchLeads)
+router.get('/search', searchLeads)
 router.get('/status/:status', getLeadsByStatus)
 router.get('/filters', getLeadsByFilters)
-// router.get('/stats', getLeadStats)
+router.get('/stats', getLeadStats)
+router.get('/:id', getLeadById)
 router.post('/', createLead);
 router.post('/multiple', createMultipleLeads);
-// router.post('/export/pdf/all', createLeadPDFAll)
-// router.post('/export/pdf', createLeadPDF)
+router.post('/export/pdf/all', createLeadPDFAll)
+router.post('/export/pdf/date-range', createLeadPDFByDateRange)
+router.post('/export/pdf/:date', createLeadPDFByDate)
+router.post('/:id/export/pdf', createLeadPDFById)
 router.put('/:id', updateLead);
 router.put('/:id/tag', updateLeadTag);
 router.put('/bulk/status', updateLeadStatusBulk)

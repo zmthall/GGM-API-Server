@@ -28,3 +28,17 @@ export type LeadStatus =
   | 'Converted'     // They became a customer/sale
   | 'Lost'          // Didn't work out
   | 'Spam';         // Junk/fake leads
+
+export interface LeadStats {
+  totalLeads: number;
+  statusBreakdown: Record<LeadStatus, number>;
+  conversionRate: number;
+  recentActivity: {
+    leadsThisWeek: number;
+    leadsThisMonth: number;
+    leadsLastMonth: number;
+    monthlyGrowthRate: number;
+  };
+  sourceBreakdown: Record<string, number>;
+  lastUpdated: string;
+}

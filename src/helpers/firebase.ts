@@ -3,6 +3,7 @@ import { firebaseAuth, firebaseDB } from '../config/firebase';
 import type { FirebaseDocument, CreateDocumentResult } from '../types/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import type { PaginatedResult, PaginationOptions } from '../types/pagination';
+import { Lead } from '../types/lead';
 
 export const createDocument = async <T extends Record<string, any>>(
   collectionName: string, 
@@ -416,8 +417,6 @@ export const createFirebaseUser = async (userData: {
 export const generateEmailVerification = async (email: string): Promise<string> => {
   try {
     const link = await firebaseAuth.generateEmailVerificationLink(email);
-    
-    console.log(`Verification email link generated for user ${email}: ${link}`);
     return link;
   } catch (error) {
     throw new Error(`Error generating verification email: ${(error as Error).message}`);
@@ -427,7 +426,6 @@ export const generateEmailVerification = async (email: string): Promise<string> 
 export const generatePasswordReset = async (email: string): Promise<string> => {
   try {
     const link = await firebaseAuth.generatePasswordResetLink(email);
-    console.log(`Password reset link generated for ${email}: ${link}`);
     return link;
   } catch (error) {
     throw new Error(`Error generating password reset: ${(error as Error).message}`);
@@ -461,5 +459,152 @@ export const testAdminSDK = async () => {
   } catch (error) {
     console.error('Admin SDK error:', error);
     return false;
+  }
+};
+
+// Helper function for name prefix search
+export const processDateFilters = async (dateFilters: Record<string, string>) => {
+  const processed: Record<string, string> = {};
+  
+  for (const [key, value] of Object.entries(dateFilters)) {
+    const [month, day, year] = value.split('-');
+    
+    if (key.includes('_from')) {
+      // Start of day
+      const startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0, 0));
+      processed[key] = startDate.toISOString();
+    } else if (key.includes('_to')) {
+      // End of day
+      const endDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 23, 59, 59, 999));
+      processed[key] = endDate.toISOString();
+    }
+  }
+  
+  return processed;
+};
+
+// Helper function for name prefix search with date filters
+export const searchByNamePrefix = async (
+  searchTerm: string,
+  additionalFilters: Record<string, any> = {},
+  dateFilters: Record<string, string> = {}
+): Promise<Lead[]> => {
+  try {
+    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = firebaseDB.collection('leads')
+      .where('name', '>=', searchTerm)
+      .where('name', '<=', searchTerm + '\uf8ff');
+
+    // Apply additional filters
+    Object.entries(additionalFilters).forEach(([field, value]) => {
+      query = query.where(field, '==', value);
+    });
+
+    // Apply date filters
+    if (dateFilters.creation_date_from) {
+      query = query.where('creation_date', '>=', dateFilters.creation_date_from);
+    }
+    if (dateFilters.creation_date_to) {
+      query = query.where('creation_date', '<=', dateFilters.creation_date_to);
+    }
+    if (dateFilters.last_updated_from) {
+      query = query.where('last_updated', '>=', dateFilters.last_updated_from);
+    }
+    if (dateFilters.last_updated_to) {
+      query = query.where('last_updated', '<=', dateFilters.last_updated_to);
+    }
+
+    query = query.limit(50);
+
+    const snapshot = await query.get();
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Lead));
+  } catch (error) {
+    console.error('Name prefix search with date filters failed:', error);
+    return [];
+  }
+};
+
+// Helper function for email search with date filters
+export const searchByEmail = async (
+  searchTerm: string,
+  additionalFilters: Record<string, any> = {},
+  dateFilters: Record<string, string> = {}
+): Promise<Lead[]> => {
+  try {
+    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = firebaseDB.collection('leads')
+      .where('email', '>=', searchTerm)
+      .where('email', '<=', searchTerm + '\uf8ff');
+
+    // Apply additional filters
+    Object.entries(additionalFilters).forEach(([field, value]) => {
+      query = query.where(field, '==', value);
+    });
+
+    // Apply date filters
+    if (dateFilters.creation_date_from) {
+      query = query.where('creation_date', '>=', dateFilters.creation_date_from);
+    }
+    if (dateFilters.creation_date_to) {
+      query = query.where('creation_date', '<=', dateFilters.creation_date_to);
+    }
+    if (dateFilters.last_updated_from) {
+      query = query.where('last_updated', '>=', dateFilters.last_updated_from);
+    }
+    if (dateFilters.last_updated_to) {
+      query = query.where('last_updated', '<=', dateFilters.last_updated_to);
+    }
+
+    query = query.limit(50);
+
+    const snapshot = await query.get();
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Lead));
+  } catch (error) {
+    console.error('Email search with date filters failed:', error);
+    return [];
+  }
+};
+
+// Helper function to get leads with date filters (for client-side search)
+export const getLeadsWithDateFilters = async (
+  additionalFilters: Record<string, any> = {},
+  dateFilters: Record<string, string> = {}
+): Promise<Lead[]> => {
+  try {
+    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = firebaseDB.collection('leads');
+
+    // Apply additional filters
+    Object.entries(additionalFilters).forEach(([field, value]) => {
+      query = query.where(field, '==', value);
+    });
+
+    // Apply date filters
+    if (dateFilters.creation_date_from) {
+      query = query.where('creation_date', '>=', dateFilters.creation_date_from);
+    }
+    if (dateFilters.creation_date_to) {
+      query = query.where('creation_date', '<=', dateFilters.creation_date_to);
+    }
+    if (dateFilters.last_updated_from) {
+      query = query.where('last_updated', '>=', dateFilters.last_updated_from);
+    }
+    if (dateFilters.last_updated_to) {
+      query = query.where('last_updated', '<=', dateFilters.last_updated_to);
+    }
+
+    query = query.orderBy('creation_date', 'desc').limit(500);
+
+    const snapshot = await query.get();
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Lead));
+  } catch (error) {
+    console.error('Get leads with date filters failed:', error);
+    return [];
   }
 };

@@ -247,3 +247,229 @@ export const deleteLead = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const searchLeads = async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || typeof q !== 'string') {
+      res.status(400).json({
+        success: false,
+        message: 'Search query parameter "q" is required'
+      });
+      return;
+    }
+
+    if (q.trim().length < 2) {
+      res.status(400).json({
+        success: false,
+        message: 'Search term must be at least 2 characters long'
+      });
+      return;
+    }
+
+    // Read pagination parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+
+    // Extract date filters
+    const dateFilters: Record<string, string> = {};
+    if (req.query.creation_date_from) dateFilters.creation_date_from = req.query.creation_date_from as string;
+    if (req.query.creation_date_to) dateFilters.creation_date_to = req.query.creation_date_to as string;
+    if (req.query.last_updated_from) dateFilters.last_updated_from = req.query.last_updated_from as string;
+    if (req.query.last_updated_to) dateFilters.last_updated_to = req.query.last_updated_to as string;
+
+    // Validate date formats (MM-DD-YYYY)
+    const dateRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])-\d{4}$/;
+    for (const [key, value] of Object.entries(dateFilters)) {
+      if (!dateRegex.test(value)) {
+        res.status(400).json({
+          success: false,
+          message: `Invalid date format for ${key}. Use MM-DD-YYYY`
+        });
+        return;
+      }
+    }
+
+    // Extract other filters (excluding pagination and date params)
+    const { 
+      q: _, page: __, limit: ___, pageSize: ____, 
+      creation_date_from: _____, creation_date_to: ______, 
+      last_updated_from: _______, last_updated_to: ________, 
+      ...otherFilters 
+    } = req.query;
+
+    const result = await leadService.searchLeads(q.trim(), otherFilters, dateFilters, { page, pageSize });
+    
+    res.json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+      searchTerm: q.trim(),
+      appliedFilters: otherFilters,
+      dateFilters: dateFilters
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const getLeadStats = async (req: Request, res: Response) => {
+  try {
+    const stats = await leadService.getLeadStats();
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const getLeadById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const lead = await leadService.getLeadById(id);
+    
+    if (!lead) {
+      res.status(404).json({
+        success: false,
+        message: 'Lead not found'
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: lead
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const createLeadPDFById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const pdfBuffer = await leadService.createLeadPDFById(id);
+    
+    // Get lead name for filename (optional - could just use ID)
+    const lead = await leadService.getLeadById(id);
+    const filename = lead 
+      ? `lead-${lead.name.replace(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
+      : `lead-${id.substring(0, 8)}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const createLeadPDFAll = async (req: Request, res: Response) => {
+  try {
+    const pdfBuffer = await leadService.createLeadPDFAll();
+    
+    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const filename = `all-leads-report-${currentDate}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const createLeadPDFByDateRange = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.body;
+
+    if (!startDate || !endDate) {
+      res.status(400).json({
+        success: false,
+        message: 'Both startDate and endDate are required (MM-DD-YYYY format)'
+      });
+      return;
+    }
+
+    // Validate date formats (MM-DD-YYYY)
+    const dateRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])-\d{4}$/;
+    if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Use MM-DD-YYYY'
+      });
+      return;
+    }
+
+    const pdfBuffer = await leadService.createLeadPDFByDateRange(startDate, endDate);
+    
+    const filename = `leads-report-${startDate.replace(/\//g, '-')}-to-${endDate.replace(/\//g, '-')}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const createLeadPDFByDate = async (req: Request, res: Response) => {
+  try {
+    const { date } = req.params;
+
+    if (!date) {
+      res.status(400).json({
+        success: false,
+        message: 'Date is required (MM-DD-YYYY format)'
+      });
+      return;
+    }
+
+    // Validate date formats (MM-DD-YYYY)
+    const dateRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])-\d{4}$/;
+    if (!dateRegex.test(date)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Use MM-DD-YYYY'
+      });
+      return;
+    }
+
+    const pdfBuffer = await leadService.createLeadPDFByDate(date);
+    
+    const filename = `leads-report-${date.replace(/\//g, '-')}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
