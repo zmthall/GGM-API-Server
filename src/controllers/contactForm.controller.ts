@@ -113,6 +113,59 @@ export const getContactFormsByDate = async (req: Request, res: Response) => {
   }
 };
 
+export const getContactFormsByDateRange = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.params;
+    
+    // Read pagination parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+
+    const result = await contactForm.getContactFormsByDateRange(
+      { startDate, endDate }, 
+      {}, 
+      { page, pageSize }
+    );
+    
+    res.json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const getContactFormsByStatus = async (req: Request, res: Response) => {
+  try {
+    const { status } = req.params;
+    
+    // Read pagination parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+
+    const result = await contactForm.getContactFormsByStatus(
+      { status: status }, 
+      { page, pageSize }
+    );
+    
+    res.json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
 export const updateContactFormStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -236,6 +289,57 @@ export const deleteContactForm = async (req: Request, res: Response) => {
       success: true,
       message: 'Contact form deleted successfully'
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const createContactFormPDFById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const pdfBuffer = await contactForm.createContactFormPDFById(id);
+    
+    // Get contact form data for filename
+    const contactFormDocument = await contactForm.getContactFormById(id);
+    const filename = contactFormDocument 
+      ? `contact-form-${contactFormDocument?.first_name}-${contactFormDocument?.last_name}-${id.substring(0, 8)}.pdf`
+      : `contact-form-${id.substring(0, 8)}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const createContactFormPDFBulk = async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ids array is required and cannot be empty'
+      });
+    }
+
+    const zipBuffer = await contactForm.createContactFormPDFBulk(ids);
+    
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const filename = `contact-forms-bulk-${timestamp}.zip`;
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(zipBuffer);
   } catch (error) {
     res.status(500).json({
       success: false,

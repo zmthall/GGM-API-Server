@@ -1,9 +1,9 @@
-// helpers/pdfGenerator.ts
 import PDFDocument from "pdfkit";
-import { Lead, LeadStatus } from "../types/lead";
+import { Lead, LeadStatus } from "../../types/lead";
 
-export class PDFGenerator {
-  static createLeadsPDF(leads: Lead[]): Promise<Buffer> {
+export class LeadsPDFGenerator {
+  // Creation of a pdf with a table of all the leads added to the pdf
+  static createPDF(leads: Lead[]): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({
@@ -55,7 +55,7 @@ export class PDFGenerator {
     doc
       .fontSize(12)
       .fillColor("#7f8c8d")
-      .text(`Generated on ${currentDate} • ${totalLeads} Total Leads`, 50, 85, {
+      .text(`Generated PDF on ${currentDate} • ${totalLeads} Total Leads`, 50, 85, {
         align: "center",
       });
 
@@ -68,7 +68,11 @@ export class PDFGenerator {
       .stroke();
   }
 
-  private static addSummaryStats(doc: PDFKit.PDFDocument, leads: Lead[], yPosition: number = 130): void {
+  private static addSummaryStats(
+    doc: PDFKit.PDFDocument,
+    leads: Lead[],
+    yPosition: number = 130
+  ): void {
     const stats = this.calculateStats(leads);
 
     doc
@@ -271,7 +275,8 @@ export class PDFGenerator {
     return statusColors[status] || "#2c3e50";
   }
 
-  static createLeadsDateRangePDF(
+  // Creation of pdf using a date range and leads pulled from date range
+  static createDateRangePDF(
     leads: Lead[],
     startDate: string,
     endDate: string
@@ -340,7 +345,7 @@ export class PDFGenerator {
       .fontSize(12)
       .fillColor("#7f8c8d")
       .text(
-        `Generated on ${currentDate} • ${totalLeads} Total Leads`,
+        `Generated PDF on ${currentDate} • ${totalLeads} Total Leads`,
         50,
         105,
         { align: "center" }
@@ -355,10 +360,7 @@ export class PDFGenerator {
       .stroke();
   }
 
-  static createLeadsDatePDF(
-    leads: Lead[],
-    date: string
-  ): Promise<Buffer> {
+  static createDatePDF(leads: Lead[], date: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({
@@ -421,7 +423,7 @@ export class PDFGenerator {
       .fontSize(12)
       .fillColor("#7f8c8d")
       .text(
-        `Generated on ${currentDate} • ${totalLeads} Total Leads`,
+        `Generated PDF on ${currentDate} • ${totalLeads} Total Leads`,
         50,
         105,
         { align: "center" }
@@ -436,7 +438,8 @@ export class PDFGenerator {
       .stroke();
   }
 
-  static createSingleLeadPDF(lead: Lead): Promise<Buffer> {
+  // Creation of a single lead PDF
+  static createSinglePDF(lead: Lead): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({
@@ -498,7 +501,7 @@ export class PDFGenerator {
     doc
       .fontSize(10)
       .fillColor("#7f8c8d")
-      .text(`Generated on ${currentDate}`, 50, 110, { align: "center" });
+      .text(`Generated PDF on ${currentDate}`, 50, 110, { align: "center" });
 
     // Horizontal line
     doc
@@ -664,17 +667,10 @@ export class PDFGenerator {
       });
   }
 
-  // private static addSingleLeadFooter(doc: PDFKit.PDFDocument): void {
-  //   doc.fontSize(8)
-  //      .fillColor('#7f8c8d')
-  //      .text('Page 1 of 1 • Lead Management System', 50, doc.page.height - 60);
-  // }
-
   private static addSingleLeadFooter(
     doc: PDFKit.PDFDocument,
     lead: Lead
   ): void {
-    // Don't loop through pages, just add footer to current page
     doc
       .strokeColor("#bdc3c7")
       .lineWidth(1)
@@ -682,7 +678,7 @@ export class PDFGenerator {
       .lineTo(545, doc.page.height - 75)
       .stroke();
 
-    // Page number and generation info
+    // Page footer information
     doc
       .fontSize(8)
       .fillColor("#7f8c8d")
@@ -692,12 +688,4 @@ export class PDFGenerator {
         width: doc.page.width - 50,
       });
   }
-
-  //   static createContactFormPDF(contactData: any) {
-  // Contact form PDF logic
-  //   }
-
-  //   static createRideRequestPDF(rideData: any) {
-  // Ride request PDF logic
-  //   }
 }

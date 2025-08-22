@@ -532,7 +532,7 @@ export const createLeadPDFById = async (id: string): Promise<Buffer> => {
       throw new Error('Lead not found');
     }
 
-    const pdfBuffer = await PDFGenerator.createSingleLeadPDF(lead);
+    const pdfBuffer = await PDFGenerator.leads.createSinglePDF(lead);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create lead PDF: ${(error as Error).message}`);
@@ -559,7 +559,7 @@ export const createLeadPDFAll = async (): Promise<Buffer> => {
       throw new Error('No leads found to export');
     }
 
-    const pdfBuffer = await PDFGenerator.createLeadsPDF(leads);
+    const pdfBuffer = await PDFGenerator.leads.createPDF(leads);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create all leads PDF: ${(error as Error).message}`);
@@ -585,7 +585,7 @@ export const createLeadPDFByDateRange = async (
     }
 
     // Create PDF with date range in header
-    const pdfBuffer = await PDFGenerator.createLeadsDateRangePDF(leads, startDate, endDate);
+    const pdfBuffer = await PDFGenerator.leads.createDateRangePDF(leads, startDate, endDate);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create date range PDF: ${(error as Error).message}`);
@@ -610,7 +610,7 @@ export const createLeadPDFByDate= async (
     }
 
     // Create PDF with date range in header
-    const pdfBuffer = await PDFGenerator.createLeadsDatePDF(leads, date);
+    const pdfBuffer = await PDFGenerator.leads.createDatePDF(leads, date);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create date range PDF: ${(error as Error).message}`);

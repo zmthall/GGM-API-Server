@@ -1,7 +1,8 @@
 // /services/email.services.ts
 import nodemailer from 'nodemailer';
 import { nodeMailerEmail, nodeMailerPassword, nodeMailerContactFormEmail, nodeMailerContactFormCCEmails, nodeMailerRideRequestEmail, nodeMailerRideRequestCCEmails } from '../config/email';
-import { ContactFormData, EmailMessage, RideRequestData } from '../types/nodeMailer';
+import type { EmailMessage, RideRequestData } from '../types/nodeMailer';
+import type { ContactFormData } from '../types/contactForm';
 import { formatDateTime } from '../helpers/dateFormat';
 
 class EmailService {

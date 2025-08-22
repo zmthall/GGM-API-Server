@@ -15,16 +15,6 @@ export interface EmailMessage {
   }>;
 }
 
-export interface ContactFormData {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  reason: string;
-  contact_method: string;
-  message: string;
-}
-
 export interface RideRequestData {
   name: string;
   dob: string; // ISO date string
