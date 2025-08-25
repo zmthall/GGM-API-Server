@@ -1,7 +1,7 @@
 import { brandedEmailHost, brandedEmailPassword, brandedEmailPort, brandedEmailUser } from '../../config/email';
 import { EmailService } from './EmailService';
 
-export class NoReplyEmail extends EmailService{
+export class NoReplyEmailService extends EmailService{
     constructor() {
         super({
             host: brandedEmailHost,

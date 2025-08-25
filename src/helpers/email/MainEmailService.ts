@@ -5,7 +5,7 @@ import { ContactFormData } from "../../types/contactForm";
 import { EmailMessage, RideRequestData } from "../../types/nodeMailer";
 import { formatDateTime } from "../dateFormat";
 
-export class MainEmail extends EmailService {
+export class MainEmailService extends EmailService {
   constructor() {
     super({
       service: 'gmail',
