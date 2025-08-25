@@ -14,7 +14,7 @@ import {
 const router = Router();
 
 // Middleware
-import { authenticateKey } from '../middlewares/authenticateKey';
+import { verifyFirebaseToken } from '../middlewares/verifyFirebaseToken';
 
 router.get('/route/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Ride Request routes are working.' });
@@ -24,16 +24,16 @@ router.post('/export/pdf/:id', createRideRequestPDFById)
 
 router.post('/export/pdf/bulk', createRideRequestPDFBulk)
 
-router.get('/', authenticateKey, getAllRideRequests);
+router.get('/', verifyFirebaseToken, getAllRideRequests);
 
-router.get('/date/:date', authenticateKey, getRideRequestsByDate);
+router.get('/date/:date', verifyFirebaseToken, getRideRequestsByDate);
 
-router.get('/:id', authenticateKey, getRideRequestById);
+router.get('/:id', verifyFirebaseToken, getRideRequestById);
 
-router.put('/:id/status', authenticateKey, updateRideRequestStatus)
+router.put('/:id/status', verifyFirebaseToken, updateRideRequestStatus)
 
-router.put('/:id/tags', authenticateKey, addTagsToRideRequest)
+router.put('/:id/tags', verifyFirebaseToken, addTagsToRideRequest)
 
-router.delete('/:id', authenticateKey, deleteRideRequest)
+router.delete('/:id', verifyFirebaseToken, deleteRideRequest)
 
 export default router;

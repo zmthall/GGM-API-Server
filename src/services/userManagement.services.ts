@@ -1,4 +1,5 @@
-import { createDocumentWithId, createFirebaseUser, deleteDocument, deleteFirebaseUser, getAllDocuments, updateDocument } from "../helpers/firebase";
+import { createDocumentWithId, createFirebaseUser, deleteDocument, deleteFirebaseUser, getAllDocuments, getDocument, updateDocument } from "../helpers/firebase";
+import type { UserProfile } from "../types/user";
 
 export const createUser = async (
   userData: { email: string; password: string; displayName?: string; role?: 'admin' | 'user' },
@@ -80,6 +81,29 @@ Promise<{ id: string; lastLogin: string; }> => {
     const loginDate = (new Date()).toISOString();
   
     const result = await updateDocument('users', uid, {lastLogin: loginDate});
+  
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to last login date: ${(error as Error).message}`);
+  }
+}
+
+export const getUserProfile = async (uid: string): 
+Promise<UserProfile | null> => {
+  try {
+    const result = await getDocument('users', uid)
+
+    return result as UserProfile | null;
+  } catch (error) {
+    throw new Error(`cannot get user profile: ${(error as Error).message}`)
+  }
+} 
+
+
+export const updateDisplayName = async (uid: string, newDisplayName: string):
+Promise<{ id: string; displayName: string; }> => { 
+  try {
+    const result = await updateDocument('users', uid, {displayName: newDisplayName});
   
     return result;
   } catch (error) {

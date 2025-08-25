@@ -61,14 +61,14 @@ router.get("/stats", verifyFirebaseToken, getLeadStats);
 router.get("/:id", verifyFirebaseToken, getLeadById);
 router.post("/", verifyFirebaseToken, createLead);
 router.post("/multiple", verifyFirebaseToken, createMultipleLeads);
-router.post("/export/pdf/all", createLeadPDFAll);
+router.post("/export/pdf/all", verifyFirebaseToken, createLeadPDFAll);
 router.post(
   "/export/pdf/date-range",
   verifyFirebaseToken,
   createLeadPDFByDateRange
 );
 router.post("/export/pdf/:date", verifyFirebaseToken, createLeadPDFByDate);
-router.post("/:id/export/pdf", createLeadPDFById);
+router.post("/:id/export/pdf", verifyFirebaseToken, createLeadPDFById);
 router.put("/:id", verifyFirebaseToken, updateLead);
 router.put("/:id/tag", verifyFirebaseToken, updateLeadTag);
 router.put("/bulk/status", verifyFirebaseToken, updateLeadStatusBulk);

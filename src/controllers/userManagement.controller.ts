@@ -1,9 +1,7 @@
-import { generateEmailVerification, getDocument } from '../helpers/firebase';
+import { generateEmailVerification, generatePasswordReset, getDocument } from '../helpers/firebase';
 import * as userManagement from '../services/userManagement.services';
-import { nodeMailerEmail } from '../config/email';
 import type { Request, Response } from 'express';
-import { EmailMessage } from '../types/nodeMailer';
-import * as emailer from '../services/email.services';
+import { Emailer } from '../helpers/email';
 
 export const createUser = async (req: Request, res: Response) => {
   try {
@@ -60,21 +58,9 @@ export const createUser = async (req: Request, res: Response) => {
       createdByUid
     );
     
-    const validationLink = await generateEmailVerification(result.email);
+    const verificationLink = await generateEmailVerification(result.email);
 
-    const message: EmailMessage = {
-        from: nodeMailerEmail,
-        to: result.email,
-        subject: `Validate New Account on Golden Gate Manor Inc Website`,
-        text: `Please validate your account with the link below\n${validationLink}\n\nThank you`,
-        html: `
-            <p>Please validate your account with the link below.</p>
-            <p><a href="${validationLink}">${validationLink}</a></p>
-            <p>Thank you</p>
-        `
-    };
-
-    await emailer.emailService.sendEmail(message);
+    await Emailer.noreply.sendVerificationLinkEmail(result.email, verificationLink);
 
     res.status(201).json({
       success: true,
@@ -237,6 +223,148 @@ export const updateLastLogin = async (req: Request, res: Response) => {
       message: 'User login updated successfully',
       data: result
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+}
+
+export const getUserProfile = async (req: Request, res: Response) => {
+  try {
+    const uid = req.user?.uid
+    
+    if (!uid) {
+      res.status(400).json({
+        success: false,
+        message: 'User is not logged in'
+      });
+      return;
+    }
+
+    const userProfileData = await userManagement.getUserProfile(uid);
+    
+    if (!userProfileData) {
+      res.status(404).json({
+        success: false,
+        message: 'Ride request not found'
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: userProfileData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const updateDisplayName = async (req: Request, res: Response) => {
+  try {
+    const uid = req.user?.uid;
+
+    const { displayName } = req.body;
+
+    if (!uid) {
+      res.status(400).json({
+        success: false,
+        message: 'User is not logged in.'
+      });
+      return;
+    }
+
+    // Validate displayName
+    if (displayName.length > 15) {
+      res.status(400).json({
+        success: false,
+        message: 'Display name cannot be longer than 15 characters.'
+      });
+      return;
+    }
+
+    // Check if user exists
+    const existingUser = await getDocument('users', uid);
+    if (!existingUser) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+      return;
+    }
+
+    const result = await userManagement.updateDisplayName(uid, displayName)
+
+    res.json({
+      success: true,
+      message: 'User login updated successfully',
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+}
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const email = req.user?.email;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: 'User is not logged in.'
+      });
+      return;
+    }
+
+    const passwordResetLink = await generatePasswordReset(email);
+
+    const result = await Emailer.noreply.sendPasswordResetEmail(email, passwordResetLink);
+
+    res.status(201).json({
+      success: true,
+      message: 'Password reset link sent successfully.',
+      data: result
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+}
+
+export const resendEmailVerification = async (req: Request, res: Response) => {
+  try {
+    const email = req.user?.email;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: 'User is not logged in.'
+      });
+      return;
+    }
+
+    const verificationLink = await generateEmailVerification(email);
+
+    const result = await Emailer.noreply.sendVerificationLinkEmail(email, verificationLink);
+
+    res.status(201).json({
+      success: true,
+      message: 'Email verification link sent successfully.',
+      data: result
+    });
+
   } catch (error) {
     res.status(500).json({
       success: false,

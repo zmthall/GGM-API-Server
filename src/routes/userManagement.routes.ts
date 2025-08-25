@@ -7,7 +7,11 @@ import {
   deleteUser,
   getAllUsers,
   updateUserRole,
-  updateLastLogin
+  updateLastLogin,
+  getUserProfile,
+  updateDisplayName,
+  changePassword,
+  resendEmailVerification
 } from '../controllers/userManagement.controller';
 
 const router = Router();
@@ -24,9 +28,9 @@ router.put('/admin/edit-user/:uid/role', verifyFirebaseToken, requireAdmin, upda
 
 // User profile routes
 router.put('/update-login', verifyFirebaseToken, updateLastLogin)
-// router.get('/profile', verifyFirebaseToken, getUserProfile);
-// router.put('/profile', verifyFirebaseToken, updateProfile);
-// router.put('/profile/change-password', verifyFirebaseToken, changePassword);
-// router.post('/profile/send-verification', verifyFirebaseToken, sendEmailVerification);
+router.get('/profile', verifyFirebaseToken, getUserProfile);
+router.put('/profile', verifyFirebaseToken, updateDisplayName);
+router.put('/profile/change-password', verifyFirebaseToken, changePassword);
+router.post('/profile/send-verification', verifyFirebaseToken, resendEmailVerification);
 
 export default router;

@@ -1,13 +1,13 @@
 // /controllers/email.controller.ts
 import { Request, Response } from 'express';
-import * as emailer from '../services/email.services';
+import * as EmailService from '../services/email.services';
 import { saveEmailData, updateDocument } from '../helpers/firebase';
 
 export const sendSingleEmail = async (req: Request, res: Response) => {
   try {
     const emailMessage = req.body;
     
-    const result = await emailer.emailService.sendEmail(emailMessage);
+    const result = await EmailService.sendSingleEmail(emailMessage);
     
     if (result.success) {
       res.status(200).json({
@@ -43,7 +43,7 @@ export const sendBulkEmails = async (req: Request, res: Response) => {
       return;
     }
     
-    const result = await emailer.emailService.sendBulkEmails(emails);
+    const result = await EmailService.sendBulkEmails(emails);
     
     res.status(200).json({
       success: result.success,
@@ -63,7 +63,7 @@ export const sendBulkEmails = async (req: Request, res: Response) => {
 
 export const verifyEmailConnection = async (req: Request, res: Response) => {
   try {
-    const isConnected = await emailer.emailService.verifyConnection();
+    const isConnected = await EmailService.verifyEmailConnection();
     
     res.status(200).json({
       success: true,
@@ -111,7 +111,7 @@ export const sendContactFormEmail = async (req: Request, res: Response) => {
     }
 
     // Step 2: Send email
-    const emailResult = await emailer.emailService.sendContactFormEmail(contactData);
+    const emailResult = await EmailService.sendContactFormEmail(contactData);
     
     // Step 3: Update database record with email status
     try {
@@ -220,7 +220,7 @@ export const sendRideRequestEmail = async (req: Request, res: Response) => {
     }
 
     // Step 2: Send email
-    const emailResult = await emailer.emailService.sendRideRequestEmail(rideData);
+    const emailResult = await EmailService.sendRideRequestEmail(rideData);
     
     // Step 3: Update database record with email status
     try {

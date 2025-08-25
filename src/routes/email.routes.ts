@@ -5,13 +5,13 @@ import { sendSingleEmail, sendBulkEmails, verifyEmailConnection, sendContactForm
 const router = Router();
 
 // Middleware (uncomment if needed)
-import { authenticateKey } from '../middlewares/authenticateKey';
+import { verifyFirebaseToken } from '../middlewares/verifyFirebaseToken';
 
 // Send single email (auth required)
-router.post('/send', authenticateKey, sendSingleEmail);
+router.post('/send', verifyFirebaseToken, sendSingleEmail);
 
 // Send bulk emails (auth required)
-router.post('/send/bulk', authenticateKey, sendBulkEmails);
+router.post('/send/bulk', verifyFirebaseToken, sendBulkEmails);
 
 // Send contact form email (no auth needed for public contact forms)
 router.post('/contact-form', sendContactFormEmail);
@@ -20,7 +20,7 @@ router.post('/contact-form', sendContactFormEmail);
 router.post('/ride-request', sendRideRequestEmail);
 
 // Verify email service connection
-router.get('/verify', verifyEmailConnection);
+router.get('/verify', verifyFirebaseToken, verifyEmailConnection);
 
 // Health check
 router.get('/route/health', (req, res) => {

@@ -432,6 +432,26 @@ export const generatePasswordReset = async (email: string): Promise<string> => {
   }
 };
 
+// export const sendPasswordReset = async (email: string): Promise<any> => {
+//   try {
+//     // Generate the password reset link using Firebase Admin
+//     const resetLink = await generatePasswordReset(email);
+    
+//     // Send the email using IONOS SMTP
+//     const emailResult = await sendPasswordResetEmail(email, resetLink);
+    
+//     return { 
+//       success: true, 
+//       message: 'Password reset email sent successfully',
+//       messageId: emailResult.messageId 
+//     };
+    
+//   } catch (error) {
+//     console.error('Password reset error:', error);
+//     throw new Error(`Error sending password reset: ${(error as Error).message}`);
+//   }
+// };
+
 export const deleteFirebaseUser = async (uid: string): Promise<void> => {
   try {
     await firebaseAuth.deleteUser(uid);

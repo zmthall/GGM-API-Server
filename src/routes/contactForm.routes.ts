@@ -16,7 +16,7 @@ import {
 const router = Router();
 
 // Middleware
-import { authenticateKey } from '../middlewares/authenticateKey';
+import { verifyFirebaseToken } from '../middlewares/verifyFirebaseToken';
 
 router.get('/route/health', (_req, res) => {
     res.status(200).json({ status: 'OK', message: 'Contact Form routes are working.' });
@@ -26,20 +26,20 @@ router.post('/export/pdf/bulk', createContactFormPDFBulk)
 
 router.post('/export/pdf/:id', createContactFormPDFById)
 
-router.get('/', authenticateKey, getAllContactForms);
+router.get('/', verifyFirebaseToken, getAllContactForms);
 
-router.get('/date/:date', authenticateKey, getContactFormsByDate);
+router.get('/date/:date', verifyFirebaseToken, getContactFormsByDate);
 
-router.get('/:id', authenticateKey, getContactFormById);
+router.get('/:id', verifyFirebaseToken, getContactFormById);
 
 router.get('/date-range/:startDate/:endDate', getContactFormsByDateRange)
 
 router.get('/status/:status', getContactFormsByStatus)
 
-router.put('/:id/status', authenticateKey, updateContactFormStatus)
+router.put('/:id/status', verifyFirebaseToken, updateContactFormStatus)
 
-router.put('/:id/tags', authenticateKey, addTagsToContactForm)
+router.put('/:id/tags', verifyFirebaseToken, addTagsToContactForm)
 
-router.delete('/:id', authenticateKey, deleteContactForm)
+router.delete('/:id', verifyFirebaseToken, deleteContactForm)
 
 export default router;
