@@ -256,3 +256,55 @@ export const deleteRideRequest = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const createRideRequestPDFById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const pdfBuffer = await rideRequest.createRideRequestPDFById(id);
+    
+    // Get ride request data for filename
+    const rideRequestDocument = await rideRequest.getRideRequestById(id);
+    const filename = rideRequestDocument 
+      ? `ride-request-${rideRequestDocument.name.replace(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
+      : `ride-request-${id.substring(0, 8)}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
+export const createRideRequestPDFBulk = async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'ids array is required and cannot be empty'
+      });
+      return;
+    }
+
+    const zipBuffer = await rideRequest.createRideRequestPDFBulk(ids);
+    
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const filename = `ride-requests-bulk-${timestamp}.zip`;
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(zipBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};

@@ -5,10 +5,17 @@ export interface RideRequestDocument extends RideRequestData {
   contact_type: string;
   tags: string[];
   created_at: string;
-  status: string;
+  status: RideRequestStatus;
   email_status?: string;
   email_sent_at?: string;
   message_id?: string;
   email_error?: string;
   email_failed_at?: string;
 }
+
+export type RideRequestStatus =
+  | "new"
+  | "reviewing"
+  | "scheduled"
+  | "spam"
+  | "closed";

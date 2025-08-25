@@ -1,7 +1,10 @@
 // /services/rideRequest.services.ts
 import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, updateDocument } from "../helpers/firebase";
-import { RideRequestDocument } from "../types/rideRequest";
-import { PaginatedResult, PaginationOptions } from "../types/pagination";
+import { Zippper } from "../helpers/fileZip";
+import { PDFGenerator } from "../helpers/pdfGenerator";
+import type { RideRequestDocument } from "../types/rideRequest";
+import type { PaginatedResult, PaginationOptions } from "../types/pagination";
+import type { PDFFile } from "../types/PDF";
 
 export const getAllRideRequests = async (
   filters: Record<string, any> = {},
@@ -128,5 +131,53 @@ export const deleteRideRequest = async (id: string): Promise<void> => {
     await deleteDocument('ride_requests', id);
   } catch (error) {
     throw new Error(`Failed to delete ride request: ${(error as Error).message}`);
+  }
+};
+
+export const createRideRequestPDFById = async (id: string): Promise<Buffer> => {
+  try {
+    const rideRequest = await getRideRequestById(id);
+    
+    if (!rideRequest) {
+      throw new Error('Ride request not found');
+    }
+
+    const pdfBuffer = await PDFGenerator.rideRequest.createSinglePDF(rideRequest);
+    return pdfBuffer;
+  } catch (error) {
+    throw new Error(`Failed to create ride request PDF: ${(error as Error).message}`);
+  }
+};
+
+export const createRideRequestPDFBulk = async (ids: string[]): Promise<Buffer> => {
+  try {
+    const pdfFiles: PDFFile[] = [];
+    
+    // Generate PDF for each ride request
+    for (const id of ids) {
+      const rideRequest = await getRideRequestById(id);
+      
+      if (!rideRequest) {
+        console.warn(`Ride request with ID ${id} not found, skipping...`);
+        continue;
+      }
+      
+      const pdfBuffer = await PDFGenerator.rideRequest.createSinglePDF(rideRequest);
+      const filename = `ride-request-${rideRequest.name.replace(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`;
+      
+      pdfFiles.push({
+        buffer: pdfBuffer,
+        filename: filename
+      });
+    }
+    
+    if (pdfFiles.length === 0) {
+      throw new Error('No valid ride requests found for the provided IDs');
+    }
+    
+    const zipBuffer = await Zippper.createPDFZip(pdfFiles);
+    return zipBuffer;
+  } catch (error) {
+    throw new Error(`Failed to create bulk ride request PDFs: ${(error as Error).message}`);
   }
 };

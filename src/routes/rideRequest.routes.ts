@@ -6,7 +6,9 @@ import {
     getRideRequestsByDate,
     updateRideRequestStatus,
     deleteRideRequest,
-    addTagsToRideRequest
+    addTagsToRideRequest,
+    createRideRequestPDFById,
+    createRideRequestPDFBulk
 } from '../controllers/rideRequest.controller';
 
 const router = Router();
@@ -17,6 +19,10 @@ import { authenticateKey } from '../middlewares/authenticateKey';
 router.get('/route/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Ride Request routes are working.' });
 })
+
+router.post('/export/pdf/:id', createRideRequestPDFById)
+
+router.post('/export/pdf/bulk', createRideRequestPDFBulk)
 
 router.get('/', authenticateKey, getAllRideRequests);
 

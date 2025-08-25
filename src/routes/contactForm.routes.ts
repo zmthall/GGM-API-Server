@@ -26,7 +26,6 @@ router.post('/export/pdf/bulk', createContactFormPDFBulk)
 
 router.post('/export/pdf/:id', createContactFormPDFById)
 
-
 router.get('/', authenticateKey, getAllContactForms);
 
 router.get('/date/:date', authenticateKey, getContactFormsByDate);

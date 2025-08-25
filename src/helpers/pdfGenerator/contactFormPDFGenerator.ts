@@ -2,6 +2,8 @@ import PDFDocument from "pdfkit";
 import { ContactFormDocument, ContactFormStatus } from "../../types/contactForm";
 
 export class ContactFormPDFGenerator {
+  static addedReviewedLine = false;
+
   static createSinglePDF(
     contactFormDocument: ContactFormDocument
   ): Promise<Buffer> {
@@ -28,10 +30,11 @@ export class ContactFormPDFGenerator {
 
         this.addMessageSection(doc, contactFormDocument);
 
-        this.addSingleContactFooter(doc, contactFormDocument, );
+        this.addSingleContactFormFooter(doc, contactFormDocument, );
 
         // End the document - this triggers the 'end' event
         doc.end();
+        this.addedReviewedLine = false;
       } catch (error) {
         reject(error);
       }
@@ -194,7 +197,7 @@ export class ContactFormPDFGenerator {
     // Position title
     let y = doc.y + gapBeforeTitle;
     if (y + 20 > pageBottomLimit()) {
-      this.addSingleContactFooter(doc, contactFormDocument);
+      this.addSingleContactFormFooter(doc, contactFormDocument);
       doc.addPage();
       y = pageTop();
     }
@@ -218,7 +221,7 @@ export class ContactFormPDFGenerator {
       const avail = pageBottomLimit() - y - pad * 2;
 
       if (avail < doc.currentLineHeight()) {
-        this.addSingleContactFooter(doc, contactFormDocument);
+        this.addSingleContactFormFooter(doc, contactFormDocument);
         doc.addPage();
         y = pageTop();
         continue;
@@ -254,7 +257,7 @@ export class ContactFormPDFGenerator {
       text = text.slice(fitted.length).trimStart();
 
       if (text.length > 0 && (pageBottomLimit() - y) < doc.currentLineHeight()) {
-        this.addSingleContactFooter(doc, contactFormDocument);
+        this.addSingleContactFormFooter(doc, contactFormDocument);
         doc.addPage();
         y = pageTop();
       }
@@ -287,7 +290,7 @@ export class ContactFormPDFGenerator {
   }
 
 
-  private static addSingleContactFooter(
+  private static addSingleContactFormFooter(
     doc: PDFKit.PDFDocument,
     contactFormDocument: ContactFormDocument
   ): void {
@@ -299,11 +302,34 @@ export class ContactFormPDFGenerator {
       .stroke();
 
     // Page footer information
+    const footerY = doc.page.height - 60;
+    
+    // Left: Patient name
     doc
       .fontSize(8)
       .fillColor("#7f8c8d")
-      .text(`${contactFormDocument.first_name} ${contactFormDocument.last_name}`, 50, doc.page.height - 60, { align: "left" })
-      .text("Contact Form Management System", 0, doc.page.height - 60, {
+      .text(`${contactFormDocument.first_name} ${contactFormDocument.last_name}`, 50, footerY, { align: "left" });
+
+    // Center: Reviewed By line
+    if(!this.addedReviewedLine) {
+      doc
+        .fontSize(8)
+        .fillColor("#7f8c8d")
+        .text("Reviewed By: _______________", 0, footerY, {
+          align: "center",
+          width: doc.page.width,
+        });
+
+      this.addedReviewedLine = true;
+    }
+
+    
+
+    // Right: System name
+    doc
+      .fontSize(8)
+      .fillColor("#7f8c8d")
+      .text("Contact Form Management System", 0, footerY, {
         align: "right",
         width: doc.page.width - 50,
       });

@@ -325,10 +325,11 @@ export const createContactFormPDFBulk = async (req: Request, res: Response) => {
     const { ids } = req.body;
     
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'ids array is required and cannot be empty'
       });
+      return;
     }
 
     const zipBuffer = await contactForm.createContactFormPDFBulk(ids);
