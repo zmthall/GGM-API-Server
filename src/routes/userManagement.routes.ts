@@ -30,7 +30,7 @@ router.put('/admin/edit-user/:uid/role', verifyFirebaseToken, requireAdmin, upda
 router.put('/update-login', verifyFirebaseToken, updateLastLogin)
 router.get('/profile', verifyFirebaseToken, getUserProfile);
 router.put('/profile', verifyFirebaseToken, updateDisplayName);
-router.post('/profile/change-password', changePassword);
+router.post('/profile/change-password', verifyFirebaseToken, changePassword);
 router.post('/profile/send-verification', verifyFirebaseToken, resendEmailVerification);
 
 export default router;
