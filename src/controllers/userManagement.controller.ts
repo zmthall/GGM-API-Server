@@ -315,7 +315,7 @@ export const updateDisplayName = async (req: Request, res: Response) => {
 
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const email = req.user?.email;
+    const email = req.body.email;
 
     if (!email) {
       res.status(400).json({
