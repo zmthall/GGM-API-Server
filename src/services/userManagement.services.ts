@@ -88,6 +88,19 @@ Promise<{ id: string; lastLogin: string; }> => {
   }
 }
 
+export const updateLastPasswordReset = async (uid: string):
+Promise<{ id: string; lastPasswordReset: string; }> => { 
+  try {
+    const lastPasswordReset = (new Date()).toISOString();
+  
+    const result = await updateDocument('users', uid, {lastPasswordReset});
+  
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to last login date: ${(error as Error).message}`);
+  }
+}
+
 export const getUserProfile = async (uid: string): 
 Promise<UserProfile | null> => {
   try {

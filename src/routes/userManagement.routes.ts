@@ -8,8 +8,10 @@ import {
   getAllUsers,
   updateUserRole,
   updateLastLogin,
+  updateLastPasswordReset,
   getUserProfile,
   updateDisplayName,
+  // deleteCurrentUser,
   changePassword,
   resendEmailVerification
 } from '../controllers/userManagement.controller';
@@ -28,9 +30,11 @@ router.put('/admin/edit-user/:uid/role', verifyFirebaseToken, requireAdmin, upda
 
 // User profile routes
 router.put('/update-login', verifyFirebaseToken, updateLastLogin)
+router.put('/update-password-reset', verifyFirebaseToken, updateLastPasswordReset)
 router.get('/profile', verifyFirebaseToken, getUserProfile);
 router.put('/profile', verifyFirebaseToken, updateDisplayName);
 router.post('/profile/change-password', verifyFirebaseToken, changePassword);
 router.post('/profile/send-verification', verifyFirebaseToken, resendEmailVerification);
+// router.delete('/profile/delete-current-user', verifyFirebaseToken, deleteCurrentUser)
 
 export default router;
