@@ -122,6 +122,43 @@ export const deleteUser = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const uid = req.user?.uid;
+
+    if (!uid) {
+      res.status(400).json({
+        success: false,
+        message: 'User is not logged in.'
+      });
+      return;
+    }
+
+    // Check if user exists first
+    try {
+      await getDocument('users', uid);
+    } catch (error) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+      return;
+    }
+
+    await userManagement.deleteUser(uid);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await userManagement.getAllUsers();

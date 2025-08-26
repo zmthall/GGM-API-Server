@@ -11,7 +11,7 @@ import {
   updateLastPasswordReset,
   getUserProfile,
   updateDisplayName,
-  // deleteCurrentUser,
+  deleteCurrentUser,
   changePassword,
   resendEmailVerification
 } from '../controllers/userManagement.controller';
@@ -35,6 +35,6 @@ router.get('/profile', verifyFirebaseToken, getUserProfile);
 router.put('/profile', verifyFirebaseToken, updateDisplayName);
 router.post('/profile/change-password', verifyFirebaseToken, changePassword);
 router.post('/profile/send-verification', verifyFirebaseToken, resendEmailVerification);
-// router.delete('/profile/delete-current-user', verifyFirebaseToken, deleteCurrentUser)
+router.delete('/profile/delete-user', verifyFirebaseToken, deleteCurrentUser)
 
 export default router;
