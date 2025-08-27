@@ -2,6 +2,7 @@ import { generateEmailVerification, generatePasswordReset, getDocument } from '.
 import * as userManagement from '../services/userManagement.services';
 import type { Request, Response } from 'express';
 import { Emailer } from '../helpers/email';
+import { UserProfile } from '../types/user';
 
 export const createUser = async (req: Request, res: Response) => {
   try {
@@ -122,6 +123,65 @@ export const deleteUser = async (req: Request, res: Response) => {
   }
 };
 
+export const disableUserToggle = async (req: Request, res: Response) => {
+  try {
+    const { uid } = req.params;
+    const adminUid = req.user?.uid;
+    let disabled;
+
+    if (!uid) {
+      res.status(400).json({
+        success: false,
+        message: 'User UID is required'
+      });
+      return;
+    }
+
+    if(!adminUid) {
+      res.status(400).json({
+        success: false,
+        message: 'An admin logged in is required'
+      });
+      return;
+    }
+
+    // Prevent admin from disabling themselves
+    if (uid === adminUid) {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot disable your own account'
+      });
+      return;
+    }
+
+
+    // Check if user exists first
+    try {
+      const user = await getDocument<{ status: 'active' | 'disabled' }>('users', uid);
+
+      disabled = user?.status === "active" ? true : false;
+    } catch (error) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+      return;
+    }
+
+    await userManagement.disableUserToggle(uid, disabled, adminUid);
+
+    res.json({
+      success: true,
+      message: 'User disabled successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+};
+
 export const deleteCurrentUser = async (req: Request, res: Response) => {
   try {
     const uid = req.user?.uid;
@@ -161,12 +221,16 @@ export const deleteCurrentUser = async (req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const users = await userManagement.getAllUsers();
+    // Read both page and limit/pageSize parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 5;
+
+    const result = await userManagement.getAllUsers({ page, pageSize });
 
     res.json({
       success: true,
-      data: users,
-      count: users.length
+      data: result.data,
+      pagination: result.pagination
     });
   } catch (error) {
     res.status(500).json({
@@ -180,6 +244,23 @@ export const updateUserRole = async (req: Request, res: Response) => {
   try {
     const { uid } = req.params;
     const { role } = req.body;
+
+    const requester = req.user?.uid;
+    if(!requester) {
+      res.status(400).json({
+        success: false,
+        message: 'An admin logged in is required'
+      });
+      return;
+    }
+
+    if(uid === requester) {
+      res.status(400).json({
+        success: false,
+        message: 'You cannot change your own role.'
+      });
+      return;
+    }
 
     if (!uid) {
       res.status(400).json({
@@ -216,7 +297,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await userManagement.updateUserRole(uid, role);
+    const result = await userManagement.updateUserRole(uid, role, requester);
 
     res.json({
       success: true,
@@ -402,6 +483,47 @@ export const changePassword = async (req: Request, res: Response) => {
     const passwordResetLink = await generatePasswordReset(email);
 
     const result = await Emailer.noreply.sendPasswordResetEmail(email, passwordResetLink);
+
+    res.status(201).json({
+      success: true,
+      message: 'Password reset link sent successfully.',
+      data: result
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: (error as Error).message
+    });
+  }
+}
+
+export const changePasswordByID = async (req: Request, res: Response) => {
+  try {
+    const { uid } = req.params;
+
+    // Check if user exists
+    const user = await getDocument<UserProfile>('users', uid);
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: `User with UID[${uid}] not found.`
+      });
+      return;
+    }
+
+    const passwordResetLink = await generatePasswordReset(user.email);
+
+    const updatePasswordReset = await userManagement.updateLastPasswordReset(uid);
+    if(!updatePasswordReset) {
+      res.status(404).json({
+        success: false,
+        message: `Failed to update last password reset for UID[${uid}.]`
+      });
+      return;
+    }
+
+    const result = await Emailer.noreply.sendPasswordResetEmail(user.email, passwordResetLink);
 
     res.status(201).json({
       success: true,

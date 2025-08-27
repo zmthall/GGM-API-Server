@@ -1,15 +1,17 @@
 // /types/user.ts
 
 export interface UserProfile {
-  uid: string; // Firebase UID
+  id: string; // Firebase UID
   email: string;
   displayName?: string;
   role: 'admin' | 'user';
   status: 'active' | 'disabled';
-  emailVerified: boolean;
   created_at: string;
   created_by?: string; // UID of admin who created this user
-  updated_at?: string;
+  updated?: {
+    at: string;
+    by: string;
+  };
   last_login?: string;
 }
 

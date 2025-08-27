@@ -1,4 +1,5 @@
-import { createDocumentWithId, createFirebaseUser, deleteDocument, deleteFirebaseUser, getAllDocuments, getDocument, updateDocument } from "../helpers/firebase";
+import { createDocumentWithId, createFirebaseUser, deleteDocument, deleteFirebaseUser, getAllDocuments, getDocument, getPaginatedDocuments, updateDocument, updateFirebaseUser } from "../helpers/firebase";
+import { PaginatedResult, PaginationOptions } from "../types/pagination";
 import type { UserProfile } from "../types/user";
 
 export const createUser = async (
@@ -49,10 +50,46 @@ export const deleteUser = async (uid: string): Promise<void> => {
   }
 };
 
-export const getAllUsers = async (): Promise<any[]> => {
+export const disableUserToggle = async (uid: string, disabled: boolean = true, requester: string): Promise<void> => {
   try {
-    const users = await getAllDocuments('users');
-    return users;
+    // Disable user profile from Firebase Auth
+    await updateFirebaseUser(uid, { disabled });
+
+    const updateData = {
+      status: disabled ? 'disabled' : 'active',
+      updated: {
+        at: new Date().toISOString(),
+        by: requester
+      }
+    }
+
+    // Disable user profile from Firestore
+    await updateDocument('users', uid, updateData);
+  } catch (error) {
+    throw new Error(`Failed to disable user: ${(error as Error).message}`);
+  }
+}
+
+export const getAllUsers = async (options: PaginationOptions = {}): Promise<PaginatedResult<UserProfile>> => {
+  try {
+    const page = options.page || 1;
+    const pageSize = options.pageSize || 10;
+
+    const result = await getPaginatedDocuments<UserProfile>(
+          'users',
+          {}, // No filter needed unless you want to exclude certain leads
+          {
+            pageSize,
+            page,
+            orderField: 'created_at',
+            orderDirection: 'desc', // Most recent leads first
+            ...options
+          }
+        );
+    return {
+      data: result.data,
+      pagination: result.pagination
+    };
   } catch (error) {
     throw new Error(`Failed to get all users: ${(error as Error).message}`);
   }
@@ -60,12 +97,16 @@ export const getAllUsers = async (): Promise<any[]> => {
 
 export const updateUserRole = async (
   uid: string, 
-  role: 'admin' | 'user'
-): Promise<{ id: string; role: string; updated_at: string }> => {
+  role: 'admin' | 'user',
+  requester: string
+): Promise<{ id: string; role: string; updated: { at: string, by?: string }}> => {
   try {
     const updateData = {
       role,
-      updated_at: new Date().toISOString()
+      updated: {
+        at: new Date().toISOString(),
+        by: requester
+      }
     };
 
     const result = await updateDocument('users', uid, updateData);
@@ -113,10 +154,17 @@ Promise<UserProfile | null> => {
 } 
 
 
-export const updateDisplayName = async (uid: string, newDisplayName: string):
+export const updateDisplayName = async (uid: string, newDisplayName: string, requester: string | undefined = undefined):
 Promise<{ id: string; displayName: string; }> => { 
   try {
-    const result = await updateDocument('users', uid, {displayName: newDisplayName});
+    const updateData = {
+      displayName: newDisplayName,
+      updated: {
+        at: new Date().toISOString(),
+        by: requester || uid
+      } 
+    }
+    const result = await updateDocument('users', uid, updateData);
   
     return result;
   } catch (error) {

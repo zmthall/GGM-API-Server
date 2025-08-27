@@ -462,7 +462,7 @@ export const deleteFirebaseUser = async (uid: string): Promise<void> => {
 
 export const updateFirebaseUser = async (
   uid: string, 
-  updates: { email?: string; displayName?: string; password?: string }
+  updates: { email?: string; displayName?: string; password?: string; disabled: boolean }
 ): Promise<void> => {
   try {
     await firebaseAuth.updateUser(uid, updates);
