@@ -300,7 +300,6 @@ export const deleteContactForm = async (req: Request, res: Response) => {
 export const createContactFormPDFById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
     const pdfBuffer = await contactForm.createContactFormPDFById(id);
     
     // Get contact form data for filename
@@ -311,6 +310,10 @@ export const createContactFormPDFById = async (req: Request, res: Response) => {
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('X-Filename', `${filename}`)
+    res.setHeader('Access-Control-Expose-Headers', 'X-Filename');
+
     res.send(pdfBuffer);
   } catch (error) {
     res.status(500).json({

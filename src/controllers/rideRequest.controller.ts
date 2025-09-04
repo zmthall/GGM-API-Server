@@ -261,6 +261,8 @@ export const createRideRequestPDFById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    console.log('yes')
+
     const pdfBuffer = await rideRequest.createRideRequestPDFById(id);
     
     // Get ride request data for filename

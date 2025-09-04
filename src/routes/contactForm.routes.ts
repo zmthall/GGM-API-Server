@@ -22,9 +22,9 @@ router.get('/route/health', (_req, res) => {
     res.status(200).json({ status: 'OK', message: 'Contact Form routes are working.' });
 })
 
-router.post('/export/pdf/bulk', verifyFirebaseToken, createContactFormPDFBulk)
+router.get('/export/pdf/bulk', verifyFirebaseToken, createContactFormPDFBulk)
 
-router.post('/export/pdf/:id', verifyFirebaseToken, createContactFormPDFById)
+router.get('/export/pdf/:id', verifyFirebaseToken, createContactFormPDFById)
 
 router.get('/', verifyFirebaseToken, getAllContactForms);
 

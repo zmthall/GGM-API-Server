@@ -199,7 +199,7 @@ export const deleteContactForm = async (id: string): Promise<void> => {
 export const createContactFormPDFById = async (id: string): Promise<Buffer> => {
   try {
     const contactForm = await getContactFormById(id);
-    
+
     if (!contactForm) {
       throw new Error('Contact form not found');
     }
