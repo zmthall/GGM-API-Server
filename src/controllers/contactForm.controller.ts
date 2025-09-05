@@ -15,7 +15,7 @@ export const getAllContactForms = async (req: Request, res: Response) => {
   try {
     // Read both page and limit/pageSize parameters
     const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 5;
 
     // Extract filters from query parameters
     const filters: Record<string, any> = {};
