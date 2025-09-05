@@ -1,7 +1,7 @@
 // /services/contactForm.services.ts
 import { Zippper } from "../helpers/fileZip";
 import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, updateDocument } from "../helpers/firebase";
-import { PDFGenerators } from "../helpers/pdfGenerator";
+import { ContactFormPDFGenerator } from "../helpers/pdfGenerator/contactFormPDFGenerator";
 import { ContactFormDocument } from "../types/contactForm";
 import { PaginatedResult, PaginationOptions } from "../types/pagination";
 import { PDFFile } from "../types/PDF";
@@ -204,7 +204,7 @@ export const createContactFormPDFById = async (id: string): Promise<Buffer> => {
       throw new Error('Contact form not found');
     }
 
-    const pdfBuffer = await PDFGenerators.contactForm.createSinglePDF(contactForm);
+    const pdfBuffer = await ContactFormPDFGenerator.createSinglePDF(contactForm);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create contact form PDF: ${(error as Error).message}`);
@@ -224,7 +224,7 @@ export const createContactFormPDFBulk = async (ids: string[]): Promise<Buffer> =
         continue;
       }
       
-      const pdfBuffer = await PDFGenerators.contactForm.createSinglePDF(contactForm);
+      const pdfBuffer = await ContactFormPDFGenerator.createSinglePDF(contactForm);
       const filename = `contact-form-${contactForm.first_name}-${contactForm.last_name}-${id.substring(0, 8)}.pdf`;
       
       pdfFiles.push({
