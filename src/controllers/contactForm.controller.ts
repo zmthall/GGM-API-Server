@@ -1,6 +1,6 @@
 // /controllers/contactForm.controller.ts
 import * as contactForm from '../services/contactForm.services';
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import contentDisposition from 'content-disposition';
 
 // tiny helper to keep filenames header-safe
