@@ -197,7 +197,7 @@ export const updateContactFormStatus = async (req: Request, res: Response) => {
     }
 
     // Validate status values
-    const validStatuses = ['new', 'completed', 'reviewing', 'spam', 'closed'];
+    const validStatuses = ['new', 'reviewing', 'contacted', 'spam', 'closed'];
     if (!validStatuses.includes(status)) {
       res.status(400).json({
         success: false,
