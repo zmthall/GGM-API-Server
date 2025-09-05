@@ -1,6 +1,14 @@
 // /controllers/rideRequest.controller.ts
 import * as rideRequest from '../services/rideRequest.services';
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import contentDisposition from 'content-disposition';
+
+const safe = (s: string) =>
+  (s ?? '')
+    .normalize('NFKC')
+    .replace(/[\\/:*?"<>|\r\n\s]/g, '_') // includes spaces now
+    .trim()
+    .slice(0, 120);
 
 export const getAllRideRequests = async (req: Request, res: Response) => {
   try {
@@ -257,29 +265,48 @@ export const deleteRideRequest = async (req: Request, res: Response) => {
   }
 };
 
-export const createRideRequestPDFById = async (req: Request, res: Response) => {
-  try {
+export const createRideRequestPDFById = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
+    const log = req.log.child({ route: 'rideRequest.exportPDF', rideRequestId: id });
+  
+    if (!id) {
+      log.warn('missing-id');
+      res.status(400).json({ success: false, message: 'Missing route param: id' });
+      return;
+    }
 
-    console.log('yes')
-
-    const pdfBuffer = await rideRequest.createRideRequestPDFById(id);
-    
-    // Get ride request data for filename
-    const rideRequestDocument = await rideRequest.getRideRequestById(id);
-    const filename = rideRequestDocument 
-      ? `ride-request-${rideRequestDocument.name.replace(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
-      : `ride-request-${id.substring(0, 8)}.pdf`;
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(pdfBuffer);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: (error as Error).message
-    });
-  }
+    try {
+      const pdfBuffer = await rideRequest.createRideRequestPDFById(id);
+  
+      const rideRequestDocument = await rideRequest.getRideRequestById(id);
+      if (!rideRequestDocument) log.warn('contact-form-not-found-for-filename');
+  
+      const base = rideRequestDocument
+        ? safe(`contact-form-${rideRequestDocument.name.trim()}`)
+        : 'contact-form';
+      const filename = `${base}-${id.slice(0, 8)}.pdf`;
+  
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', contentDisposition(filename));
+      res.setHeader('X-Filename', encodeURIComponent(filename));
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Filename');
+      res.setHeader('Content-Length', String(pdfBuffer.length));
+  
+      // log aborted downloads too
+      res.on('close', () => {
+        if (!res.writableEnded) {
+          log.warn({ statusCode: res.statusCode }, 'download-aborted');
+        }
+      });
+  
+      res.end(pdfBuffer);
+  
+      log.info({ filename, pdfBytes: pdfBuffer.length }, 'success');
+    } catch (err) {
+      log.error({ err }, 'export-pdf-error');
+      next(err); // let the central error handler respond
+      return;
+    }
 };
 
 export const createRideRequestPDFBulk = async (req: Request, res: Response) => {

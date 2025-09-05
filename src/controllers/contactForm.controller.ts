@@ -7,7 +7,7 @@ import contentDisposition from 'content-disposition';
 const safe = (s: string) =>
   (s ?? '')
     .normalize('NFKC')
-    .replace(/[\\/:*?"<>|\r\n]/g, '_')
+    .replace(/[\\/:*?"<>|\r\n\s]/g, '_') // includes spaces now
     .trim()
     .slice(0, 120);
 
@@ -317,15 +317,8 @@ export const createContactFormPDFById = async (req: Request, res: Response, next
     return;
   }
 
-  const t0 = process.hrtime.bigint();
-  log.info('start');
-
   try {
-    // ⚡ See #2 about avoiding the second DB fetch
-    const tGen0 = process.hrtime.bigint();
     const pdfBuffer = await contactForm.createContactFormPDFById(id);
-    const genMs = Number((process.hrtime.bigint() - tGen0) / 1_000_000n);
-    log.debug({ genMs, pdfBytes: pdfBuffer.length }, 'pdf-generated');
 
     const contactFormDocument = await contactForm.getContactFormById(id);
     if (!contactFormDocument) log.warn('contact-form-not-found-for-filename');
@@ -350,8 +343,7 @@ export const createContactFormPDFById = async (req: Request, res: Response, next
 
     res.end(pdfBuffer);
 
-    const durationMs = Number((process.hrtime.bigint() - t0) / 1_000_000n);
-    log.info({ durationMs, filename, pdfBytes: pdfBuffer.length }, 'success');
+    log.info({ filename, pdfBytes: pdfBuffer.length }, 'success');
   } catch (err) {
     log.error({ err }, 'export-pdf-error');
     next(err); // let the central error handler respond
