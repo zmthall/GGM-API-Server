@@ -17,8 +17,8 @@ if (isProd) {
     fs.mkdirSync(logDir, { recursive: true });
     destination = pino.transport({
       targets: [
-        { target: 'pino/file', level: 'info',  options: { destination: path.join(logDir, 'app.log'),   mkdir: true } },
-        { target: 'pino/file', level: 'error', options: { destination: path.join(logDir, 'error.log'), mkdir: true } },
+        { target: 'pino/file', level: 'info',  options: { destination: path.join(logDir, 'app_log.txt'),   mkdir: true } },
+        { target: 'pino/file', level: 'error', options: { destination: path.join(logDir, 'error_log.txt'), mkdir: true } },
       ],
     });
   } catch (e) {
