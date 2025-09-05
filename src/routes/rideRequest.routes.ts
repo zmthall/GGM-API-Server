@@ -6,7 +6,7 @@ import {
     getRideRequestsByDate,
     updateRideRequestStatus,
     deleteRideRequest,
-    addTagsToRideRequest,
+    updateRideRequestTags,
     createRideRequestPDFById,
     createRideRequestPDFBulk
 } from '../controllers/rideRequest.controller';
@@ -32,7 +32,7 @@ router.get('/:id', verifyFirebaseToken, getRideRequestById);
 
 router.put('/:id/status', verifyFirebaseToken, updateRideRequestStatus)
 
-router.put('/:id/tags', verifyFirebaseToken, addTagsToRideRequest)
+router.put('/:id/tags', verifyFirebaseToken, updateRideRequestTags)
 
 router.delete('/:id', verifyFirebaseToken, deleteRideRequest)
 

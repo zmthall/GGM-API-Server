@@ -148,7 +148,7 @@ export const updateRideRequestStatus = async (req: Request, res: Response) => {
     }
 
     // Validate status values
-    const validStatuses = ['new', 'completed', 'reviewing', 'declined'];
+    const validStatuses = ['new', 'completed', 'reviewing', 'spam', 'declined'];
     if (!validStatuses.includes(status)) {
       res.status(400).json({
         success: false,
@@ -172,7 +172,7 @@ export const updateRideRequestStatus = async (req: Request, res: Response) => {
   }
 };
 
-export const addTagsToRideRequest = async (req: Request, res: Response) => {
+export const updateRideRequestTags = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { tags } = req.body;
@@ -206,7 +206,7 @@ export const addTagsToRideRequest = async (req: Request, res: Response) => {
     // Clean and format tags (trim whitespace, convert to lowercase for consistency)
     const cleanedTags = tags.map(tag => tag.trim().toLowerCase());
 
-    const result = await rideRequest.addTagsToRideRequest(id, cleanedTags);
+    const result = await rideRequest.updateRideRequestTags(id, cleanedTags);
     
     res.json({
       success: true,

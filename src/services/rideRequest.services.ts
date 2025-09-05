@@ -96,7 +96,7 @@ export const updateRideRequestStatus = async (
   }
 };
 
-export const addTagsToRideRequest = async (
+export const updateRideRequestTags = async (
   id: string, 
   newTags: string[]
 ): Promise<{ id: string; tags: string[]; updated_at: string }> => {
@@ -107,12 +107,9 @@ export const addTagsToRideRequest = async (
     if (!existingRideRequest) {
       throw new Error('Ride request not found');
     }
-
-    // Get existing tags or default to empty array
-    const existingTags = existingRideRequest.tags || [];
     
     // Combine existing tags with new tags and remove duplicates
-    const updatedTags = [...new Set([...existingTags, ...newTags])];
+    const updatedTags = [...new Set([...newTags])];
     
     const updateData = {
       tags: updatedTags,
