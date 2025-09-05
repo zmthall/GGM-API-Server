@@ -2,6 +2,7 @@ import app from './app'
 
 import fs from 'fs';
 import path from 'path';
+import logger from './logger';
 
 const uploadDir = path.resolve('uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -18,5 +19,6 @@ if (STATUS === 'dev') {
 } else {
   app.listen(PORT, () => {
     console.log(`🚀 Server running in ${STATUS} mode on port ${PORT}`)
+    logger.info({ node: process.versions.node }, 'server-up');
   })
 }

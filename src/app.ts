@@ -1,7 +1,10 @@
-import express from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import path from 'path';
 import cors from 'cors';
 import 'dotenv/config';
+
+import pinoHttp from 'pino-http';
+import { logger, randomID } from './logger';
 
 const allowedOrigins = [
   'https://goldengatemanor.com',
@@ -23,20 +26,48 @@ import userManagement from './routes/userManagement.routes';
 import lead from './routes/lead.routes'
 
 import { errorHandler } from './middlewares/errorHandler';
+import { routeLogger } from './middlewares/routeLogs';
 
 const app = express();
+
+// behind nginx/Passenger
+app.set('trust proxy', true);
+
 // CORS for API routes
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+  exposedHeaders: ['X-Request-Id', 'X-Filename', 'Content-Disposition']
+}));
+
+app.use(pinoHttp({
+  logger,
+  autoLogging: false,
+  genReqId(req, res) {
+    const id = (req.headers['x-request-id'] as string) ?? randomID();
+    res.setHeader('X-Request-Id', id);
+    return id;
+  },
+  redact: { paths: ['req.headers.authorization', 'req.headers.cookie'], remove: true },
+  customProps: (req) => ({ userId: (req as any).user?.uid ?? null, ip: req.ip }),
 }));
 
 app.use(express.json());
 
 const uploadsPath = path.resolve(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadsPath));
+
+const isHealth = (p: string) => /^\/health(?:$|\/)/.test(p);
+
+app.use(routeLogger({
+  name: 'api',
+  skip: (req) =>
+    isHealth(req.path) ||
+    req.path.startsWith('/uploads') ||
+    req.method === 'OPTIONS'
+}));
 
 // Routing
 app.use('/api/media', mediaRouter);
@@ -49,14 +80,31 @@ app.use('/api/contact-form', contactForm);
 app.use('/api/ride-request', rideRequest);
 app.use('/api/users', userManagement);
 app.use('/api/leads', lead)
-app.use(errorHandler);
 
 app.get('/', (req, res) => {
     res.status(403).send('<h1>Access is not Available.</h1>');
 })
 
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', message: 'Server is running' });
+  res.status(200).json({ status: 'OK', message: 'Server is running' });
+});
+
+app.get('/ping', (req, res) => {
+  req.log.info({ msg: 'pong' }, 'route-log');
+  res.json({ ok: true });
+});
+
+app.get('/boom', (_req, _res) => { throw new Error('kaboom'); });
+
+app.use(errorHandler);
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  req.log.error({ err }, 'unhandled-error');
+  // pino-http sets req.id; we also echoed it to the client
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error',
+    requestId: (req as any).id || res.getHeader('X-Request-Id') || null
+  });
 });
 
 export default app;

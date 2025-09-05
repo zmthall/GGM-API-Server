@@ -1,6 +1,15 @@
 // /controllers/contactForm.controller.ts
 import * as contactForm from '../services/contactForm.services';
 import type { Request, Response } from 'express';
+import contentDisposition from 'content-disposition';
+
+// tiny helper to keep filenames header-safe
+const safe = (s: string) =>
+  (s ?? '')
+    .normalize('NFKC')
+    .replace(/[\\/:*?"<>|\r\n]/g, '_')
+    .trim()
+    .slice(0, 120);
 
 export const getAllContactForms = async (req: Request, res: Response) => {
   try {
@@ -297,31 +306,56 @@ export const deleteContactForm = async (req: Request, res: Response) => {
   }
 };
 
-export const createContactFormPDFById = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const pdfBuffer = await contactForm.createContactFormPDFById(id);
-    
-    // Get contact form data for filename
-    const contactFormDocument = await contactForm.getContactFormById(id);
-    const filename = contactFormDocument 
-      ? `contact-form-${contactFormDocument?.first_name}-${contactFormDocument?.last_name}-${id.substring(0, 8)}.pdf`
-      : `contact-form-${id.substring(0, 8)}.pdf`;
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-    res.setHeader('X-Filename', `${filename}`)
-    res.setHeader('Access-Control-Expose-Headers', 'X-Filename');
+export const createContactFormPDFById = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const log = req.log.child({ route: 'contactForm.exportPDF', contactFormId: id });
 
-    res.send(pdfBuffer);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: (error as Error).message
+  if (!id) {
+    log.warn('missing-id');
+    return res.status(400).json({ success: false, message: 'Missing route param: id' });
+  }
+
+  const t0 = process.hrtime.bigint();
+  log.info('start');
+
+  try {
+    // ⚡ See #2 about avoiding the second DB fetch
+    const tGen0 = process.hrtime.bigint();
+    const pdfBuffer = await contactForm.createContactFormPDFById(id);
+    const genMs = Number((process.hrtime.bigint() - tGen0) / 1_000_000n);
+    log.debug({ genMs, pdfBytes: pdfBuffer.length }, 'pdf-generated');
+
+    const contactFormDocument = await contactForm.getContactFormById(id);
+    if (!contactFormDocument) log.warn('contact-form-not-found-for-filename');
+
+    const base = contactFormDocument
+      ? safe(`contact-form-${contactFormDocument.first_name}-${contactFormDocument.last_name}`)
+      : 'contact-form';
+    const filename = `${base}-${id.slice(0, 8)}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', contentDisposition(filename));
+    res.setHeader('X-Filename', encodeURIComponent(filename));
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Filename');
+    res.setHeader('Content-Length', String(pdfBuffer.length));
+
+    // log aborted downloads too
+    res.on('close', () => {
+      if (!res.writableEnded) {
+        log.warn({ statusCode: res.statusCode }, 'download-aborted');
+      }
     });
+
+    res.end(pdfBuffer);
+
+    const durationMs = Number((process.hrtime.bigint() - t0) / 1_000_000n);
+    log.info({ durationMs, filename, pdfBytes: pdfBuffer.length }, 'success');
+  } catch (err) {
+    log.error({ err }, 'export-pdf-error');
+    return next(err); // let the central error handler respond
   }
 };
+
 
 export const createContactFormPDFBulk = async (req: Request, res: Response) => {
   try {
