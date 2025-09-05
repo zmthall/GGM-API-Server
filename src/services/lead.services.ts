@@ -585,7 +585,7 @@ export const createLeadPDFByDateRange = async (
     }
 
     // Create PDF with date range in header
-    const pdfBuffer = await PDFGenerator.leads.createDateRangePDF(leads, startDate, endDate);
+    const pdfBuffer = await PDFGenerators.leads.createDateRangePDF(leads, startDate, endDate);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create date range PDF: ${(error as Error).message}`);
@@ -610,7 +610,7 @@ export const createLeadPDFByDate= async (
     }
 
     // Create PDF with date range in header
-    const pdfBuffer = await PDFGenerator.leads.createDatePDF(leads, date);
+    const pdfBuffer = await PDFGenerators.leads.createDatePDF(leads, date);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create date range PDF: ${(error as Error).message}`);
