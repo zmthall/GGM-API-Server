@@ -185,10 +185,10 @@ export const addTagsToRideRequest = async (req: Request, res: Response) => {
       return;
     }
 
-    if (!tags || !Array.isArray(tags) || tags.length === 0) {
+    if (!tags || !Array.isArray(tags)) {
       res.status(400).json({
         success: false,
-        message: 'Tags array is required and must contain at least one tag'
+        message: 'Tags array is required'
       });
       return;
     }
