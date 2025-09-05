@@ -3,8 +3,8 @@ import { ContactFormPDFGenerator } from "./contactFormPDFGenerator";
 import { LeadsPDFGenerator } from "./leadsPDFGenerator";
 import { RideRequestPDFGenerator } from "./rideRequestPDFGenerator";
 
-export class PDFGenerator {
-  static leads = LeadsPDFGenerator;
-  static contactForm = ContactFormPDFGenerator;
-  static rideRequest = RideRequestPDFGenerator;
-}
+export const PDFGenerators = {
+  contactForm: ContactFormPDFGenerator,
+  leads: LeadsPDFGenerator,
+  rideRequest: RideRequestPDFGenerator,
+} as const;
