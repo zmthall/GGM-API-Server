@@ -1,7 +1,7 @@
 // /services/rideRequest.services.ts
 import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, updateDocument } from "../helpers/firebase";
 import { Zippper } from "../helpers/fileZip";
-import { PDFGenerator } from "../helpers/pdfGenerator";
+import { PDFGenerators } from "../helpers/pdfGenerator";
 import type { RideRequestDocument } from "../types/rideRequest";
 import type { PaginatedResult, PaginationOptions } from "../types/pagination";
 import type { PDFFile } from "../types/PDF";
@@ -142,7 +142,7 @@ export const createRideRequestPDFById = async (id: string): Promise<Buffer> => {
       throw new Error('Ride request not found');
     }
 
-    const pdfBuffer = await PDFGenerator.rideRequest.createSinglePDF(rideRequest);
+    const pdfBuffer = await PDFGenerators.rideRequest.createSinglePDF(rideRequest);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create ride request PDF: ${(error as Error).message}`);
@@ -162,7 +162,7 @@ export const createRideRequestPDFBulk = async (ids: string[]): Promise<Buffer> =
         continue;
       }
       
-      const pdfBuffer = await PDFGenerator.rideRequest.createSinglePDF(rideRequest);
+      const pdfBuffer = await PDFGenerators.rideRequest.createSinglePDF(rideRequest);
       const filename = `ride-request-${rideRequest.name.replace(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`;
       
       pdfFiles.push({

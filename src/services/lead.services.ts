@@ -3,7 +3,7 @@ import { Lead, LeadStats, LeadStatus } from '../types/lead';
 import { createDocument, createDocumentsBatch, deleteDocument, getDocument, getLeadsWithDateFilters, getPaginatedDocuments, getPaginatedDocumentsByDateRange, processDateFilters, searchByEmail, searchByNamePrefix, updateDocument } from '../helpers/firebase'; // Assuming you have this utility
 import { validateLead } from '../helpers/leadValidation';
 import { PaginatedResult, PaginationOptions } from '../types/pagination';
-import { PDFGenerator } from '../helpers/pdfGenerator';
+import { PDFGenerators } from '../helpers/pdfGenerator';
 
 export const createLead = async (data: Omit<Lead, 'id'>): Promise<Lead> => {
   const currentTimestamp = new Date().toISOString();
@@ -532,7 +532,7 @@ export const createLeadPDFById = async (id: string): Promise<Buffer> => {
       throw new Error('Lead not found');
     }
 
-    const pdfBuffer = await PDFGenerator.leads.createSinglePDF(lead);
+    const pdfBuffer = await PDFGenerators.leads.createSinglePDF(lead);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create lead PDF: ${(error as Error).message}`);
@@ -559,7 +559,7 @@ export const createLeadPDFAll = async (): Promise<Buffer> => {
       throw new Error('No leads found to export');
     }
 
-    const pdfBuffer = await PDFGenerator.leads.createPDF(leads);
+    const pdfBuffer = await PDFGenerators.leads.createPDF(leads);
     return pdfBuffer;
   } catch (error) {
     throw new Error(`Failed to create all leads PDF: ${(error as Error).message}`);
