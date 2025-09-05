@@ -312,7 +312,8 @@ export const createContactFormPDFById = async (req: Request, res: Response, next
 
   if (!id) {
     log.warn('missing-id');
-    return res.status(400).json({ success: false, message: 'Missing route param: id' });
+    res.status(400).json({ success: false, message: 'Missing route param: id' });
+    return;
   }
 
   const t0 = process.hrtime.bigint();
@@ -352,7 +353,8 @@ export const createContactFormPDFById = async (req: Request, res: Response, next
     log.info({ durationMs, filename, pdfBytes: pdfBuffer.length }, 'success');
   } catch (err) {
     log.error({ err }, 'export-pdf-error');
-    return next(err); // let the central error handler respond
+    next(err); // let the central error handler respond
+    return;
   }
 };
 
