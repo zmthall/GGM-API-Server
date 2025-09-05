@@ -158,7 +158,7 @@ export const updateContactFormStatus = async (
   }
 };
 
-export const addTagsToContactForm = async (
+export const updateContactFormTags = async (
   id: string, 
   newTags: string[]
 ): Promise<{ id: string; tags: string[]; updated_at: string }> => {
@@ -169,12 +169,9 @@ export const addTagsToContactForm = async (
     if (!existingContactForm) {
       throw new Error('Contact form not found');
     }
-
-    // Get existing tags or default to empty array
-    const existingTags = existingContactForm.tags || [];
     
     // Combine existing tags with new tags and remove duplicates
-    const updatedTags = [...new Set([...existingTags, ...newTags])];
+    const updatedTags = [...new Set([...newTags])];
     
     const updateData = {
       tags: updatedTags,

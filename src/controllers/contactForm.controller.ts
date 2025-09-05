@@ -221,10 +221,11 @@ export const updateContactFormStatus = async (req: Request, res: Response) => {
   }
 };
 
-export const addTagsToContactForm = async (req: Request, res: Response) => {
+export const updateContactFormTags = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { tags } = req.body;
+
     
     if (!id) {
       res.status(400).json({
@@ -255,7 +256,7 @@ export const addTagsToContactForm = async (req: Request, res: Response) => {
     // Clean and format tags (trim whitespace, convert to lowercase for consistency)
     const cleanedTags = tags.map(tag => tag.trim().toLowerCase());
 
-    const result = await contactForm.addTagsToContactForm(id, cleanedTags);
+    const result = await contactForm.updateContactFormTags(id, cleanedTags);
     
     res.json({
       success: true,

@@ -6,7 +6,7 @@ import {
     getContactFormsByDate,
     updateContactFormStatus,
     deleteContactForm,
-    addTagsToContactForm,
+    updateContactFormTags,
     createContactFormPDFById,
     createContactFormPDFBulk,
     getContactFormsByDateRange,
@@ -38,7 +38,7 @@ router.get('/status/:status', verifyFirebaseToken, getContactFormsByStatus)
 
 router.put('/:id/status', verifyFirebaseToken, updateContactFormStatus)
 
-router.put('/:id/tags', verifyFirebaseToken, addTagsToContactForm)
+router.put('/:id/tags', verifyFirebaseToken, updateContactFormTags)
 
 router.delete('/:id', verifyFirebaseToken, deleteContactForm)
 
