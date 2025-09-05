@@ -20,9 +20,9 @@ router.get('/route/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Ride Request routes are working.' });
 })
 
-router.post('/export/pdf/bulk', verifyFirebaseToken, createRideRequestPDFBulk)
+router.get('/export/pdf/bulk', verifyFirebaseToken, createRideRequestPDFBulk)
 
-router.post('/export/pdf/:id', verifyFirebaseToken, createRideRequestPDFById)
+router.get('/export/pdf/:id', verifyFirebaseToken, createRideRequestPDFById)
 
 router.get('/', verifyFirebaseToken, getAllRideRequests);
 
