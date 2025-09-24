@@ -9,9 +9,11 @@ if (!admin.apps.length) {
       projectId: process.env.FB_PROJECT_ID,
       clientEmail: process.env.FB_CLIENT_EMAIL,
       privateKey: process.env.FB_PRIVATE_KEY?.replace(/\\n/g, '\n')
-    })
+    }),
+    storageBucket: process.env.FB_STORAGE_BUCKET
   });
 }
 
+export const firebaseBucket = admin.storage().bucket();
 export const firebaseDB = admin.firestore();
 export const firebaseAuth = admin.auth();
