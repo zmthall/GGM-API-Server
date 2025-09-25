@@ -173,7 +173,7 @@ export const deleteEvent = async (id: string): Promise<boolean> => {
 export const archiveEvent = async (id: string): Promise<Event | null> => {
   try {
     // First check if the event exists
-    const existingEvent = await getDocument('events', id);
+    const existingEvent = await getDocument<{ id: string, archived: boolean }>('events', id);
     
     if (!existingEvent) {
       return null;
