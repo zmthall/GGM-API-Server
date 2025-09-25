@@ -157,7 +157,7 @@ export const disableUserToggle = async (req: Request, res: Response) => {
 
     // Check if user exists first
     try {
-      const user = await getDocument<{ status: 'active' | 'disabled' }>('users', uid);
+      const user = await getDocument<{ id: string, status: 'active' | 'disabled' }>('users', uid);
 
       disabled = user?.status === "active" ? true : false;
     } catch (error) {
