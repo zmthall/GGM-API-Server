@@ -1,6 +1,7 @@
 // /routes/rideRequest.routes.ts
 import { Router } from 'express';
 import { 
+    submitRideRequestForm,
     getAllRideRequests,
     getRideRequestById,
     getRideRequestsByDate,
@@ -19,6 +20,8 @@ import { verifyFirebaseToken } from '../middlewares/verifyFirebaseToken';
 router.get('/route/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Ride Request routes are working.' });
 })
+
+router.post('/submit', submitRideRequestForm)
 
 router.get('/export/pdf/bulk', verifyFirebaseToken, createRideRequestPDFBulk)
 

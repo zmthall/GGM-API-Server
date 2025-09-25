@@ -1,6 +1,7 @@
 // /routes/contactForm.routes.ts
 import { Router } from 'express';
 import { 
+    submitContactForm,
     getAllContactForms,
     getContactFormById,
     getContactFormsByDate,
@@ -21,6 +22,8 @@ import { verifyFirebaseToken } from '../middlewares/verifyFirebaseToken';
 router.get('/route/health', (_req, res) => {
     res.status(200).json({ status: 'OK', message: 'Contact Form routes are working.' });
 })
+
+router.post('/submit', submitContactForm);
 
 router.get('/export/pdf/bulk', verifyFirebaseToken, createContactFormPDFBulk)
 

@@ -60,20 +60,20 @@ export const createDocumentWithId = async <T extends Record<string, any>>(
   }
 };
 
-export const getDocument = async <T = Record<string, any>>(
+export const getDocument = async <T extends { id: string }>(
   collectionName: string, 
   docId: string
-): Promise<FirebaseDocument | null> => {
+): Promise<T | null> => {
   try {
     const docRef = firebaseDB.collection(collectionName).doc(docId);
     const docSnap = await docRef.get();
-    return docSnap.exists ? { id: docSnap.id, ...docSnap.data() } : null;
+    return docSnap.exists ? { id: docSnap.id, ...docSnap.data() } as T : null;
   } catch (error) {
     throw new Error(`Error getting document: ${(error as Error).message}`);
   }
 };
 
-export const getAllDocuments = async <T = Record<string, any>>(
+export const getAllDocuments = async (
   collectionName: string
 ): Promise<FirebaseDocument[]> => {
   try {
@@ -431,26 +431,6 @@ export const generatePasswordReset = async (email: string): Promise<string> => {
     throw new Error(`Error generating password reset: ${(error as Error).message}`);
   }
 };
-
-// export const sendPasswordReset = async (email: string): Promise<any> => {
-//   try {
-//     // Generate the password reset link using Firebase Admin
-//     const resetLink = await generatePasswordReset(email);
-    
-//     // Send the email using IONOS SMTP
-//     const emailResult = await sendPasswordResetEmail(email, resetLink);
-    
-//     return { 
-//       success: true, 
-//       message: 'Password reset email sent successfully',
-//       messageId: emailResult.messageId 
-//     };
-    
-//   } catch (error) {
-//     console.error('Password reset error:', error);
-//     throw new Error(`Error sending password reset: ${(error as Error).message}`);
-//   }
-// };
 
 export const deleteFirebaseUser = async (uid: string): Promise<void> => {
   try {

@@ -1,10 +1,80 @@
 // /services/rideRequest.services.ts
-import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, updateDocument } from "../helpers/firebase";
+import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, saveEmailData, updateDocument } from "../helpers/firebase";
 import { Zippper } from "../helpers/fileZip";
 import { RideRequestPDFGenerator } from "../helpers/pdfGenerator/rideRequestPDFGenerator";
-import type { RideRequestDocument } from "../types/rideRequest";
+import type { RideRequestData, RideRequestDocument } from "../types/rideRequest";
 import type { PaginatedResult, PaginationOptions } from "../types/pagination";
 import type { PDFFile } from "../types/PDF";
+import { cryptoService } from "./crypto.services";
+import * as EmailService from "./email.services"
+
+export const submitRideRequestForm = async (rideData: RideRequestData) => {
+  let results: {
+    success: boolean;
+    emailSuccess: boolean;
+    documentId: string | undefined;
+    messageId: string | undefined;
+    emailError?: string | undefined;
+  } = {
+    success: true,
+    emailSuccess: false,
+    documentId: '',
+    messageId: ''
+  }
+
+  // Step 1: encrypt data
+  const encryptedData = cryptoService.encryptRideRequest(rideData);
+
+  // Step 2: Save to database
+  try {
+    const saveResult = await saveEmailData(encryptedData, 'ride_requests', {
+      contact_type: 'Ride Request'
+    });
+    if(saveResult.id)
+      results.documentId = saveResult.id;
+  } catch (error) {
+    throw new Error(`Failed to save to database: {ERROR} - ${(error as Error).message}`)
+  }
+
+  // Step 3: Send email
+  try {
+    const emailResult = await EmailService.sendRideRequestEmail(rideData);
+    if(emailResult.success) {
+      results.messageId = emailResult.messageId
+      results.emailSuccess = true;
+    } else {
+      results.emailError = emailResult.error;
+      results.emailSuccess = false;
+    }
+  } catch (error) {
+    throw new Error(`Failed to send ride request form email: {ERROR} - ${(error as Error).message}`)
+  }
+
+  // Step 4: Update database record with email status
+  try {
+    if (results.messageId !== '') {
+      const updateData = {
+        email_status: 'email_sent',
+        email_sent_at: new Date().toISOString(),
+        ...(results.messageId && { message_id: results.messageId })
+      };
+      if(results.documentId)
+        await updateDocument('ride_requests', results.documentId, updateData);
+    } else {
+      const updateData = {
+        email_status: 'email_failed',
+        email_failed_at: new Date().toISOString(),
+        ...(results.emailError && { email_error: results.emailError })
+      };
+      if(results.documentId)
+        await updateDocument('ride_requests', results.documentId, updateData);
+    }
+  } catch (error) {
+    throw new Error(`Failed to update ride request status: {ERROR} - ${(error as Error).message}`)
+  }
+
+  return results;
+}
 
 export const getAllRideRequests = async (
   filters: Record<string, any> = {},
@@ -25,9 +95,11 @@ export const getAllRideRequests = async (
         ...options
       }
     );
+    
+    const decryptedResults = cryptoService.decryptRideRequests(result.data)
 
     return {
-      data: result.data,
+      data: decryptedResults,
       pagination: result.pagination
     };
   } catch (error) {
@@ -35,10 +107,17 @@ export const getAllRideRequests = async (
   }
 };
 
-export const getRideRequestById = async (id: string): Promise<RideRequestDocument | null> => {
+export const getRideRequestById = async (id: string): Promise<RideRequestDocument> => {
   try {
-    const result = await getDocument('ride_requests', id);
-    return result as RideRequestDocument | null;
+    const result = await getDocument<RideRequestDocument>('ride_requests', id);
+
+    if (!result) {
+      throw new Error('Contact form not found');
+    }
+
+    const decryptedResult = cryptoService.decryptRideRequest(result);
+
+    return decryptedResult;
   } catch (error) {
     throw new Error(`Failed to get ride request: ${(error as Error).message}`);
   }
@@ -72,7 +151,12 @@ export const getRideRequestsByDate = async (
       }
     );
     
-    return result;
+    const decryptedData = cryptoService.decryptRideRequests(result.data);
+    
+    return {
+      ...result,
+      data: decryptedData
+    };
   } catch (error) {
     console.error('Date query error:', error);
     throw new Error(`Failed to get ride requests by date: ${(error as Error).message}`);

@@ -1,6 +1,6 @@
 // /routes/email.routes.ts
 import { Router } from 'express';
-import { sendSingleEmail, sendBulkEmails, verifyEmailConnection, sendContactFormEmail, sendRideRequestEmail } from '../controllers/email.controller';
+import { sendSingleEmail, sendBulkEmails, verifyEmailConnection } from '../controllers/email.controller';
 
 const router = Router();
 
@@ -12,12 +12,6 @@ router.post('/send', verifyFirebaseToken, sendSingleEmail);
 
 // Send bulk emails (auth required)
 router.post('/send/bulk', verifyFirebaseToken, sendBulkEmails);
-
-// Send contact form email (no auth needed for public contact forms)
-router.post('/contact-form', sendContactFormEmail);
-
-// Send ride request contact form email (no auth needed for public contact forms)
-router.post('/ride-request', sendRideRequestEmail);
 
 // Verify email service connection
 router.get('/verify', verifyFirebaseToken, verifyEmailConnection);

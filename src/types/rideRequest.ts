@@ -1,4 +1,15 @@
-import { RideRequestData } from "./nodeMailer";
+export interface RideRequestData {
+  name: string;
+  dob: string; // ISO date string
+  phone: string;
+  email: string;
+  med_id: string; // Medicaid ID
+  apt_date: string; // ISO date string  
+  apt_time: string; // ISO time string
+  pickup_address: string;
+  dropoff_address: string;
+  notes: string;
+}
 
 export interface RideRequestDocument extends RideRequestData {
   id: string;

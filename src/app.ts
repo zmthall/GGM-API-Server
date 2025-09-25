@@ -25,6 +25,7 @@ import rideRequest from './routes/rideRequest.routes';
 import userManagement from './routes/userManagement.routes';
 import lead from './routes/lead.routes'
 import houses from './routes/houses.routes'
+import crypto from './routes/crypto.routes'
 
 import { errorHandler } from './middlewares/errorHandler';
 import { routeLogger } from './middlewares/routeLogs';
@@ -82,6 +83,7 @@ app.use('/api/ride-request', rideRequest);
 app.use('/api/users', userManagement);
 app.use('/api/leads', lead)
 app.use('/api/houses', houses)
+app.use('/api/crypto', crypto)
 
 app.get('/', (req, res) => {
     res.status(403).send('<h1>Access is not Available.</h1>');

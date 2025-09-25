@@ -1,10 +1,78 @@
 // /services/contactForm.services.ts
 import { Zippper } from "../helpers/fileZip";
-import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, updateDocument } from "../helpers/firebase";
+import { deleteDocument, getDocument, getPaginatedDocuments, getPaginatedDocumentsByDateRange, saveEmailData, updateDocument } from "../helpers/firebase";
 import { ContactFormPDFGenerator } from "../helpers/pdfGenerator/contactFormPDFGenerator";
-import { ContactFormDocument } from "../types/contactForm";
+import { ContactFormData, ContactFormDocument } from "../types/contactForm";
 import { PaginatedResult, PaginationOptions } from "../types/pagination";
 import { PDFFile } from "../types/PDF";
+import { cryptoService } from "./crypto.services";
+import * as EmailService from '../services/email.services';
+
+export const submitContactForm = async (contactData: ContactFormData) => {
+  let results: {
+    success: boolean;
+    emailSuccess: boolean;
+    documentId: string | undefined;
+    messageId: string | undefined;
+    emailError?: string | undefined;
+  } = {
+    success: true,
+    emailSuccess: false,
+    documentId: '',
+    messageId: ''
+  }
+
+  // Step 1: encrypt data
+  const encryptedData = cryptoService.encryptContact(contactData);
+
+  // Step 2: Save to database
+  try {
+    const saveResult = await saveEmailData(encryptedData, 'contact_messages');
+    if(saveResult.id)
+      results.documentId = saveResult.id;
+  } catch (error) {
+    throw new Error(`Failed to save to database: {ERROR} - ${(error as Error).message}`)
+  }
+
+  // Step 3: Send email
+  try {
+    const emailResult = await EmailService.sendContactFormEmail(contactData);
+    if(emailResult.success) {
+      results.messageId = emailResult.messageId
+      results.emailSuccess = true;
+    } else {
+      results.emailError = emailResult.error;
+      results.emailSuccess = false;
+    }
+  } catch (error) {
+    throw new Error(`Failed to send contact form email: {ERROR} - ${(error as Error).message}`)
+  }
+
+  // Step 4: Update database record with email status
+  try {
+    if (results.messageId !== '') {
+      const updateData = {
+        email_status: 'email_sent',
+        email_sent_at: new Date().toISOString(),
+        ...(results.messageId && { message_id: results.messageId })
+      };
+      if(results.documentId)
+        await updateDocument('contact_messages', results.documentId, updateData);
+    } else {
+      const updateData = {
+        email_status: 'email_failed',
+        email_failed_at: new Date().toISOString(),
+        ...(results.emailError && { email_error: results.emailError })
+      };
+      if(results.documentId)
+        await updateDocument('contact_messages', results.documentId, updateData);
+    }
+  } catch (error) {
+    throw new Error(`Failed to update ride request status: {ERROR} - ${(error as Error).message}`)
+  }
+
+  return results;
+}
 
 export const getAllContactForms = async (
   filters: Record<string, any> = {},
@@ -26,8 +94,10 @@ export const getAllContactForms = async (
       }
     );
 
+    const decryptedResults = cryptoService.decryptContacts(result.data)
+
     return {
-      data: result.data,
+      data: decryptedResults,
       pagination: result.pagination
     };
   } catch (error) {
@@ -35,10 +105,16 @@ export const getAllContactForms = async (
   }
 };
 
-export const getContactFormById = async (id: string): Promise<ContactFormDocument | null> => {
+export const getContactFormById = async (id: string): Promise<ContactFormDocument> => {
   try {
-    const result = await getDocument('contact_messages', id);
-    return result as ContactFormDocument | null;
+    const result = await getDocument<ContactFormDocument>('contact_messages', id);
+
+    if (!result) {
+      throw new Error('Contact form not found');
+    }
+
+    const decryptedResult = cryptoService.decryptContact(result);
+    return decryptedResult;
   } catch (error) {
     throw new Error(`Failed to get contact form: ${(error as Error).message}`);
   }
@@ -71,8 +147,13 @@ export const getContactFormsByDate = async (
         ...options
       }
     );
+
+    const decryptedData = cryptoService.decryptContacts(result.data);
     
-    return result;
+    return {
+      ...result,
+      data: decryptedData
+    };
   } catch (error) {
     console.error('Date query error:', error);
     throw new Error(`Failed to get contact forms by date: ${(error as Error).message}`);
@@ -107,8 +188,13 @@ export const getContactFormsByDateRange = async (
         ...options
       }
     );
+
+    const decryptedData = cryptoService.decryptContacts(result.data);
     
-    return result;
+    return {
+      ...result,
+      data: decryptedData
+    };
   } catch (error) {
     console.error('Service error:', error);
     throw new Error(`Failed to get contact forms by date: ${(error as Error).message}`);
@@ -135,7 +221,12 @@ export const getContactFormsByStatus = async (
       }
     );
 
-    return result;
+    const decryptedData = cryptoService.decryptContacts(result.data);
+    
+    return {
+      ...result,
+      data: decryptedData
+    };
   } catch (error) {
     throw new Error(`Failed to get contact forms by status: ${(error as Error).message}`);
   }

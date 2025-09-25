@@ -11,6 +11,47 @@ const safe = (s: string) =>
     .trim()
     .slice(0, 120);
 
+export const submitContactForm = async (req: Request, res: Response) => {
+  try {
+    const contactData = req.body;
+    
+    // Validate required fields
+    const requiredFields = ['first_name', 'email', 'reason', 'contact_method', 'message'];
+    const missingFields = requiredFields.filter(field => !contactData[field]);
+    
+    if (missingFields.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+      return;
+    }
+
+    const results = await contactForm.submitContactForm(contactData);
+
+    // Return response based on form submission results
+    if (results.success) {
+      res.status(200).json({
+        success: true,
+        message: 'Contact form submitted successfully',
+        messageId: results.messageId,
+        contactId: results.documentId
+      });
+      res.status(400).json({
+        success: false,
+        message: results.emailError || 'Failed to send contact form email',
+        contactId: results.documentId
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: (error as Error).message
+    });
+  }
+};
+
 export const getAllContactForms = async (req: Request, res: Response) => {
   try {
     // Read both page and limit/pageSize parameters

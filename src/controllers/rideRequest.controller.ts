@@ -10,6 +10,59 @@ const safe = (s: string) =>
     .trim()
     .slice(0, 120);
 
+export const submitRideRequestForm = async (req: Request, res: Response) => {  
+  try {
+    const rideData = req.body;
+    
+    // Validate required fields
+    const requiredFields = ['name', 'dob', 'phone', 'email', 'med_id', 'apt_date', 'apt_time', 'pickup_address', 'dropoff_address'];
+    const missingFields = requiredFields.filter(field => !rideData[field]);
+    
+    if (missingFields.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+      return;
+    }
+
+    // Validate date formats
+    const appointmentDate = new Date(rideData.apt_date);
+    const appointmentTime = new Date(rideData.apt_time);
+    const dateOfBirth = new Date(rideData.dob);
+
+    if (isNaN(appointmentDate.getTime()) || isNaN(appointmentTime.getTime()) || isNaN(dateOfBirth.getTime())) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid date format provided'
+      });
+      return;
+    }
+
+    const results = await rideRequest.submitRideRequestForm(rideData)
+
+    if (results.success) {
+      res.status(200).json({
+        success: true,
+        message: 'Ride request form submitted successfully',
+        messageId: results.messageId,
+        contactId: results.documentId
+      });
+      res.status(400).json({
+        success: false,
+        message: results.emailError || 'Failed to send ride request form email',
+        contactId: results.documentId
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: (error as Error).message
+    });
+  }
+};
+
 export const getAllRideRequests = async (req: Request, res: Response) => {
   try {
     // Read both page and limit/pageSize parameters
