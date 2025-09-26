@@ -12,6 +12,8 @@ export function makeCryptoService(cfg: CryptoConfig): CryptoSvc {
   const keyring = [cfg.current, ...cfg.retired];
 
   const encrypt = (plaintext: string | Buffer, aad?: string): string => {
+    if(plaintext === '') return ''
+
     if (cfg.requireAad && !aad) throw new Error('AAD required by policy');
     const iv = crypto.randomBytes(CRYPTO_IV_LEN);
     const cipher = crypto.createCipheriv(CRYPTO_ALGO, cfg.current.key, iv, { authTagLength: CRYPTO_TAG_LEN });
@@ -22,6 +24,8 @@ export function makeCryptoService(cfg: CryptoConfig): CryptoSvc {
   }
 
   const decrypt = (envelope: string, aad?: string): string => {
+    if(envelope === '') return ''
+
     const [version, kid, rest] = envelope.split(':');
     if (version !== cfg.version || !kid || !rest) throw new Error('Unsupported or malformed envelope');
     const [ivB64, tagB64, ctB64] = rest.split('.');
@@ -86,20 +90,22 @@ export function makeCryptoService(cfg: CryptoConfig): CryptoSvc {
       first_name: encrypt(contactData.first_name, aad ?? ''),
       last_name: encrypt(contactData.last_name, aad ?? ''),
       email: encrypt(contactData.email, aad ?? ''),
-      phone: contactData.phone || contactData.phone === '' ? encrypt(contactData.phone, aad ?? '') : ''
+      phone: contactData.phone ? encrypt(contactData.phone, aad ?? '') : ''
     }
   }
 
   const decryptContact = (contactData: ContactFormDocument, aad?: string): ContactFormDocument => {
     if(!contactData) return contactData;
 
-    return {
+    const decryptedData = {
       ...contactData,
       first_name: decrypt(contactData.first_name, aad ?? ''),
       last_name: decrypt(contactData.last_name, aad ?? ''),
       email: decrypt(contactData.email, aad ?? ''),
-      phone: contactData.phone || contactData.phone === '' ? decrypt(contactData.phone, aad ?? '') : ''
-    } as ContactFormDocument;
+      phone: contactData.phone ? decrypt(contactData.phone, aad ?? '') : ''
+    };
+
+    return decryptedData;
   }
 
   const decryptContacts = (contactDataArr: ContactFormDocument[], add?: string): ContactFormDocument[] => {
