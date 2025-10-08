@@ -1,8 +1,9 @@
 // /services/email.services.ts
-import type { EmailMessage, RideRequestData } from '../types/nodeMailer';
+import type { EmailMessage } from '../types/nodeMailer';
 import type { ContactFormData } from '../types/contactForm';
 
 import { Emailer } from '../helpers/email';
+import { RideRequestData } from '../types/rideRequest';
 
 export const sendSingleEmail = async (message: EmailMessage): Promise<{ success: boolean; messageId?: string; error?: string }> => {
   try {

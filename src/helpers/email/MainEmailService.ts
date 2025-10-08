@@ -2,8 +2,9 @@ import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { EmailService } from "./EmailService";
 import { nodeMailerContactFormCCEmails, nodeMailerContactFormEmail, nodeMailerEmail, nodeMailerPassword, nodeMailerRideRequestCCEmails, nodeMailerRideRequestEmail } from "../../config/email";
 import { ContactFormData } from "../../types/contactForm";
-import { EmailMessage, RideRequestData } from "../../types/nodeMailer";
+import { EmailMessage } from "../../types/nodeMailer";
 import { formatDateTime } from "../dateFormat";
+import { RideRequestData } from "../../types/rideRequest";
 
 export class MainEmailService extends EmailService {
   constructor() {

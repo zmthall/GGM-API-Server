@@ -8,8 +8,6 @@ export const submitApplication = async (req: Request, res: Response) => {
         const applicationData = JSON.parse(req.body.applicationData);
         const files: FileUpload[] = req.files as FileUpload[] || [];
 
-        console.log(req.body.applicationData)
-
         // Immediately respond to user
         res.status(200).json({
             success: true,
