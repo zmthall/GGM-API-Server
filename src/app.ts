@@ -8,6 +8,7 @@ import { logger, randomID } from './logger';
 
 const allowedOrigins = [
   'https://goldengatemanor.com',
+  'https://www.goldengatemanor.com',
   'https://dev.goldengatemanor.com',
   'http://localhost:3000',
   'http://127.0.0.1:3000'
@@ -37,11 +38,15 @@ app.set('trust proxy', true);
 
 // CORS for API routes
 app.use(cors({
-  origin: allowedOrigins,
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
-  exposedHeaders: ['X-Request-Id', 'X-Filename', 'Content-Disposition']
+  exposedHeaders: ['X-Request-Id', 'X-Filename', 'Content-Disposition'],
+  maxAge: 86400
 }));
 
 app.use(pinoHttp({

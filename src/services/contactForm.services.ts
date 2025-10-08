@@ -86,6 +86,9 @@ export const getAllContactForms = async (
       'contact_messages',
       filters, // Dynamic filters
       {
+        status: 'spam'
+      },
+      {
         pageSize,
         page,
         orderField: 'created_at',

@@ -1,6 +1,7 @@
 // /services/mediaShown.services.ts
 import fs from 'fs';
 import path from 'path';
+import mime from 'mime'
 import { FULL_BASE_URL } from '../config/url';
 
 const SHOWN_DIR = path.resolve('uploads/community/shown');
@@ -51,46 +52,54 @@ export const getSlotMap = () => {
 };
 
 // GET - single slot image file
-export const getSlotImage = (slot: number | string) => {
-  ensureShownDir();
 
-  const files = fs.readdirSync(SHOWN_DIR);
-  const file = files.find(f => f.startsWith(`${slot}.`) && ALLOWED_EXTENSIONS.includes(path.extname(f).toLowerCase()));
-  
-  if (!file) {
-    throw new Error(`No image found for slot ${slot}`);
+function findSlotFile(slot: number | string) {
+  ensureShownDir()
+  const files = fs.readdirSync(SHOWN_DIR)
+  const file = files.find(
+    f => f.startsWith(`${slot}.`) && ALLOWED_EXTENSIONS.includes(path.extname(f).toLowerCase())
+  )
+  if (!file) throw new Error(`No image found for slot ${slot}`)
+  return path.join(SHOWN_DIR, file)
+}
+
+function readAlt(slot: number | string) {
+  const altPath = path.join(SHOWN_DIR, `${slot}.json`)
+  if (!fs.existsSync(altPath)) return null
+  try {
+    const altData = JSON.parse(fs.readFileSync(altPath, 'utf-8'))
+    return altData.alt || null
+  } catch {
+    return null
   }
+}
 
-  const filePath = path.join(SHOWN_DIR, file);
-  
-  // Get alt text
-  const altPath = path.join(SHOWN_DIR, `${slot}.json`);
-  let alt = null;
-  if (fs.existsSync(altPath)) {
-    try {
-      const altData = JSON.parse(fs.readFileSync(altPath, 'utf-8'));
-      alt = altData.alt || null;
-    } catch (err) {
-      console.error('Alt text read error:', err);
-      alt = null;
-    }
-  }
+// ✅ meta (no base64 read)
+export function getSlotImageMeta(slot: number | string) {
+  const filePath = findSlotFile(slot)
+  const stat = fs.statSync(filePath)
+  const filename = path.basename(filePath)
+  const type = mime.getType(filePath) || `image/${path.extname(filePath).slice(1)}`
+  const alt = readAlt(slot)
+  return { filePath, stat, filename, type, alt }
+}
 
-  // Read file data
-  const fileStats = fs.statSync(filePath);
-  const fileData = fs.readFileSync(filePath);
-  
+// 🔁 your existing base64 JSON function (unchanged)
+export function getSlotImage(slot: number | string) {
+  const { filePath, stat, filename, type, alt } = getSlotImageMeta(slot)
+  const fileData = fs.readFileSync(filePath)
   return {
-    slot: slot,
+    slot,
     data: {
-      filename: path.basename(filePath),
-      size: fileStats.size,
-      type: `image/${path.extname(filePath).substring(1)}`,
+      filename,
+      size: stat.size,
+      type,
       fileBase64: fileData.toString('base64'),
-      alt: alt
+      alt
     }
-  };
-};
+  }
+}
+
 
 // PUT - Update image at specific slot
 export const replaceShownImageAtSlot = (slot: number | string, file: Express.Multer.File, alt = null) => {

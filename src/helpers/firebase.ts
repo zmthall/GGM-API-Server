@@ -88,6 +88,7 @@ export const getAllDocuments = async (
 export const getPaginatedDocuments = async <T>(
   collectionName: string,
   filters: Record<string, any> = {},
+  omits: Record<string, any> = {},
   options: PaginationOptions = {}
 ): Promise<PaginatedResult<T>> => {
   try {
@@ -104,6 +105,10 @@ export const getPaginatedDocuments = async <T>(
     Object.entries(filters).forEach(([field, value]) => {
       query = query.where(field, '==', value);
     });
+
+    Object.entries(omits).forEach(([field, value]) => {
+      query = query.where(field, '!=', value);
+    })
 
     // Get ALL documents (for small datasets this is fine)
     const querySnapshot = await query.get();
@@ -211,7 +216,7 @@ export const getPaginatedDocumentsByDateRange = async <T>(
   options: PaginationOptions = {}
 ): Promise<PaginatedResult<T>> => {
   try {
-    const {
+    const { 
       pageSize = 10,
       page = 1,
       orderDirection = 'desc'

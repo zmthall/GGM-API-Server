@@ -1,6 +1,6 @@
 // /controllers/mediaShown.controller.ts
-import { getSlotMap, replaceShownImageAtSlot, deleteShownImage, deleteAllShownImages, getSlotImage } from '../services/mediaShown.services';
-
+import { getSlotMap, replaceShownImageAtSlot, deleteShownImage, deleteAllShownImages, getSlotImage, getSlotImageMeta } from '../services/mediaShown.services';
+import crypto from 'node:crypto'
 import type { Request, Response } from 'express';
 
 import fs from 'fs';
@@ -57,20 +57,53 @@ export const updateCommunityShown = (req: Request, res: Response) => {
 };
 
 export const getCommunityShownImage = (req: Request, res: Response) => {
-  const slot = parseInt(req.params.slot, 10);
-  
+  const slot = parseInt(req.params.slot, 10)
   if (isNaN(slot) || slot < 0 || slot > 7) {
-    res.status(400).json({ message: 'Slot must be between 0 and 7' });
-    return;
+    res.status(400).json({ message: 'Slot must be between 0 and 7' })
+    return
   }
 
+  const asBlob = String(req.query.format || '').toLowerCase() === 'blob'
+
   try {
-    const imageData = getSlotImage(slot);
-    res.json({ success: true, ...imageData });
+    if (!asBlob) {
+      // JSON (base64) – your existing behavior
+      const imageData = getSlotImage(slot)
+      res.json({ success: true, ...imageData })
+      return
+    }
+
+    // Blob/stream
+    const { filePath, stat, filename, type } = getSlotImageMeta(slot)
+
+    // Strong ETag based on size+mtime
+    const etag = `"${crypto
+      .createHash('sha1')
+      .update(`${stat.size}-${stat.mtimeMs}`)
+      .digest('hex')}"`
+
+    res.setHeader('Cache-Control', 'private, max-age=0, must-revalidate')
+    res.setHeader('ETag', etag)
+    res.setHeader('Last-Modified', stat.mtime.toUTCString())
+
+    if (req.headers['if-none-match'] === etag) {
+      res.status(304).end()
+      return
+    }
+
+    res.status(200)
+    res.setHeader('Content-Type', type)
+    res.setHeader('Content-Length', String(stat.size))
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
+
+    const stream = fs.createReadStream(filePath)
+    stream.on('error', () => res.status(500).end())
+    stream.pipe(res)
   } catch (error: any) {
-    res.status(404).json({ success: false, message: error.message });
+    res.status(404).json({ success: false, message: error.message })
   }
-};
+}
+
 
 export const deleteCommunityShownMedia = async (req: Request, res: Response) => {
   const { slot } = req.params;
