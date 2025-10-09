@@ -66,7 +66,9 @@ export const getAllContactForms = async (req: Request, res: Response) => {
     if (req.query.contact_method) filters.contact_method = req.query.contact_method;
     // Add more filters as needed
 
-    const result = await contactForm.getAllContactForms(filters, { page, pageSize });
+    const omit = req.query.omit === undefined ? undefined : req.query.omit === "true";
+
+    const result = await contactForm.getAllContactForms(filters, omit, { page, pageSize });
     
     // Return the format your frontend expects
     res.json({

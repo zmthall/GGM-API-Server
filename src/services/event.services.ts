@@ -78,6 +78,7 @@ export const getArchivedEvents = async (options: PaginationOptions = {}): Promis
     const result = await getPaginatedDocuments<Event>(
       'events',
       { archived: true },
+      {},
       {
         page,
         pageSize,

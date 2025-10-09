@@ -76,18 +76,21 @@ export const submitContactForm = async (contactData: ContactFormData) => {
 
 export const getAllContactForms = async (
   filters: Record<string, any> = {},
+  omit: boolean = true,
   options: PaginationOptions = {}
 ): Promise<PaginatedResult<ContactFormDocument>> => {
   try {
     const page = options.page || 1;
     const pageSize = options.pageSize || 5;
+
+    const omitValue = omit ? { status: 'spam' } : {}
+
+    console.log(omitValue)
     
     const result = await getPaginatedDocuments<ContactFormDocument>(
       'contact_messages',
       filters, // Dynamic filters
-      {
-        status: 'spam'
-      },
+      omitValue,
       {
         pageSize,
         page,

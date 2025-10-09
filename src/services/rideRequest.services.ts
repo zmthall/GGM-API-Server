@@ -77,95 +77,37 @@ export const submitRideRequestForm = async (rideData: RideRequestData) => {
 }
 
 export const getAllRideRequests = async (
-  filters: Record<string, any> = {},
-  omits: Record<string, string[] | string> = {},
+  filters: Record<string, unknown> = {},
+  omit: boolean = true,
   options: PaginationOptions = {}
 ): Promise<PaginatedResult<RideRequestDocument>> => {
   try {
-    const page = options.page || 1;
-    const pageSize = options.pageSize || 5;
+    const page = options.page || 1
+    const pageSize = options.pageSize || 5
 
-    // normalize omits to string[]
-    const omitMap: Record<string, string[]> = {};
-    for (const [k, v] of Object.entries(omits || {})) {
-      const arr = Array.isArray(v) ? v : [v];
-      const cleaned = arr.map(s => String(s).trim()).filter(Boolean);
-      if (cleaned.length) omitMap[k] = Array.from(new Set(cleaned));
-    }
+    const omitValue = omit ? { status: 'spam' } : {}
 
-    const omitFields = Object.keys(omitMap);
-
-    // Case A: exactly one omit field with exactly one value -> let helper push a single "!="
-    if (omitFields.length === 1 && omitMap[omitFields[0]].length === 1) {
-      const singleField = omitFields[0];
-      const singleValue = omitMap[singleField][0];
-
-      const result = await getPaginatedDocuments<RideRequestDocument>(
-        'ride_requests',
-        filters,
-        { [singleField]: singleValue }, // uses your helper's single '!='
-        {
-          pageSize,
-          page,
-          orderField: 'created_at',
-          orderDirection: 'desc',
-          ...options,
-        }
-      );
-
-      const decryptedResults = cryptoService.decryptRideRequests(result.data);
-      return {
-        data: decryptedResults,
-        pagination: result.pagination,
-      };
-    }
-
-    // Case B: multiple omits or multiple values -> fetch with NO omits, post-filter, then paginate
-    // We ask helper for a large page to get everything because your helper fetches all then paginates in JS anyway.
-    const raw = await getPaginatedDocuments<RideRequestDocument>(
+    const result = await getPaginatedDocuments<RideRequestDocument>(
       'ride_requests',
-      filters,
-      {}, // no omits in Firestore to avoid the multiple-negative error
+      filters,                 // equality filters
+      omitValue,      // 🚫 omit spam (same pattern as contacts)
       {
-        pageSize: 1000000, // effectively "all" (dataset assumed small per your helper's comment)
-        page: 1,
+        page,
+        pageSize,
         orderField: 'created_at',
         orderDirection: 'desc',
         ...options,
       }
-    );
-
-    // decrypt then apply omits in memory
-    const decryptedAll = cryptoService.decryptRideRequests(raw.data);
-
-    const filtered = decryptedAll.filter(row => {
-      for (const [field, values] of Object.entries(omitMap)) {
-        const v = (row as any)[field];
-        if (values.includes(String(v))) return false; // omit match
-      }
-      return true;
-    });
-
-    // paginate the filtered set
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const pageData = filtered.slice(startIndex, endIndex);
+    )
 
     return {
-      data: pageData,
-      pagination: {
-        currentPage: page,
-        pageSize,
-        hasNextPage: endIndex < filtered.length,
-        hasPreviousPage: page > 1,
-        totalPages: Math.ceil(filtered.length / pageSize),
-        totalCount: filtered.length,
-      },
-    };
+      data: cryptoService.decryptRideRequests(result.data),
+      pagination: result.pagination,
+    }
   } catch (error) {
-    throw new Error(`Failed to get ride requests: ${(error as Error).message}`);
+    throw new Error(`Failed to get ride requests: ${(error as Error).message}`)
   }
-};
+}
 
 export const getRideRequestById = async (id: string): Promise<RideRequestDocument> => {
   try {

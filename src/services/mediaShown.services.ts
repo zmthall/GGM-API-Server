@@ -7,8 +7,6 @@ import { FULL_BASE_URL } from '../config/url';
 const SHOWN_DIR = path.resolve('uploads/community/shown');
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 
-
-
 // Make sure directory exists
 export const ensureShownDir = () => {
   if (!fs.existsSync(SHOWN_DIR)) {
@@ -99,7 +97,6 @@ export function getSlotImage(slot: number | string) {
     }
   }
 }
-
 
 // PUT - Update image at specific slot
 export const replaceShownImageAtSlot = (slot: number | string, file: Express.Multer.File, alt = null) => {

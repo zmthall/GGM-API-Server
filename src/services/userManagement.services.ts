@@ -78,6 +78,7 @@ export const getAllUsers = async (options: PaginationOptions = {}): Promise<Pagi
     const result = await getPaginatedDocuments<UserProfile>(
           'users',
           {}, // No filter needed unless you want to exclude certain leads
+          {}, // No omits
           {
             pageSize,
             page,

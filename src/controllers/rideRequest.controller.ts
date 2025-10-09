@@ -63,87 +63,38 @@ export const submitRideRequestForm = async (req: Request, res: Response) => {
   }
 };
 
-// controllers/rideRequest.controller.ts
 export const getAllRideRequests = async (req: Request, res: Response) => {
   try {
-    // pagination
-    const page = parseInt(req.query.page as string) || 1;
+    // page + limit/pageSize (same as contacts)
+    const page = parseInt(req.query.page as string) || 1
     const pageSize =
       parseInt(req.query.limit as string) ||
       parseInt(req.query.pageSize as string) ||
-      5;
+      5
 
-    // equality filters
-    const filters: Record<string, any> = {};
-    if (req.query.status) filters.status = req.query.status;
-    if (req.query.email_status) filters.email_status = req.query.email_status;
-    if (req.query.name) filters.name = req.query.name;
-    if (req.query.med_id) filters.med_id = req.query.med_id;
+    // simple equality filters (same style as contacts)
+    const filters: Record<string, unknown> = {}
+    if (req.query.status) filters.status = req.query.status
+    if (req.query.email_status) filters.email_status = req.query.email_status
+    if (req.query.name) filters.name = req.query.name
+    if (req.query.med_id) filters.med_id = req.query.med_id
 
-    // ---- NEW: omit filters parsing ----
-    const omits: Record<string, string[]> = {};
+    const omit = !!req.query.omit
 
-    // 1) explicit keys like omit_status, omit_email_status
-    for (const [key, raw] of Object.entries(req.query)) {
-      if (!key.startsWith('omit_')) continue;
-      const field = key.replace(/^omit_/, '');
-      if (!field || raw == null) continue;
-      const values = String(raw)
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
-      if (values.length) omits[field] = (omits[field] || []).concat(values);
-    }
-
-    // 2) bracket style: omits[status]=a,b
-    const anyQuery = req.query as any;
-    if (anyQuery.omits && typeof anyQuery.omits === 'object') {
-      for (const [field, raw] of Object.entries<any>(anyQuery.omits)) {
-        if (raw == null) continue;
-        const values = String(raw)
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter(Boolean);
-        if (values.length) omits[field] = (omits[field] || []).concat(values);
-      }
-    }
-
-    // 3) compact: omits=status:spam|email_status:email_failed
-    if (typeof req.query.omits === 'string') {
-      const pairs = (req.query.omits as string).split('|');
-      for (const pair of pairs) {
-        const [field, rawVals] = pair.split(':');
-        if (!field || !rawVals) continue;
-        const values = rawVals
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean);
-        if (values.length) omits[field] = (omits[field] || []).concat(values);
-      }
-    }
-
-    // de-dupe values per field
-    for (const k of Object.keys(omits)) {
-      omits[k] = Array.from(new Set(omits[k]));
-    }
-
-    const result = await rideRequest.getAllRideRequests(filters, omits, {
-      page,
-      pageSize,
-    });
+    const result = await rideRequest.getAllRideRequests(filters, omit, { page, pageSize })
 
     res.json({
       success: true,
       data: result.data,
       pagination: result.pagination,
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message,
-    });
+    })
   }
-};
+}
 
 export const getRideRequestById = async (req: Request, res: Response) => {
   try {
