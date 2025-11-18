@@ -26,6 +26,7 @@ import rideRequest from './routes/rideRequest.routes';
 import userManagement from './routes/userManagement.routes';
 import lead from './routes/lead.routes'
 import houses from './routes/houses.routes'
+import community from './routes/communityImages.routes'
 import crypto from './routes/crypto.routes'
 
 import { errorHandler } from './middlewares/errorHandler';
@@ -88,6 +89,7 @@ app.use('/api/ride-request', rideRequest);
 app.use('/api/users', userManagement);
 app.use('/api/leads', lead)
 app.use('/api/houses', houses)
+app.use('/api/community', community)
 app.use('/api/crypto', crypto)
 
 app.get('/', (req, res) => {
