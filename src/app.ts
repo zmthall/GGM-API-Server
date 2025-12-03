@@ -28,6 +28,7 @@ import lead from './routes/lead.routes'
 import houses from './routes/houses.routes'
 import community from './routes/communityImages.routes'
 import crypto from './routes/crypto.routes'
+import verify from './routes/verify.routes'
 
 import { errorHandler } from './middlewares/errorHandler';
 import { routeLogger } from './middlewares/routeLogs';
@@ -91,6 +92,7 @@ app.use('/api/leads', lead)
 app.use('/api/houses', houses)
 app.use('/api/community', community)
 app.use('/api/crypto', crypto)
+app.use('/api/verify', verify)
 
 app.get('/', (req, res) => {
     res.status(403).send('<h1>Access is not Available.</h1>');
