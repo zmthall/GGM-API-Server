@@ -10,20 +10,22 @@ const safe = (s: string) =>
     .trim()
     .slice(0, 120);
 
-export const submitRideRequestForm = async (req: Request, res: Response) => {  
+export const submitRideRequestForm = async (req: Request, res: Response) => {
   try {
     const rideData = req.body;
-    
+
     // Validate required fields
-    const requiredFields = ['name', 'dob', 'phone', 'email', 'med_id', 'apt_date', 'apt_time', 'pickup_address', 'dropoff_address'];
-    const missingFields = requiredFields.filter(field => !rideData[field]);
-    
+    const requiredFields = [
+      'name', 'dob', 'phone', 'email', 'med_id',
+      'apt_date', 'apt_time', 'pickup_address', 'dropoff_address'
+    ];
+    const missingFields = requiredFields.filter((field) => !rideData?.[field]);
+
     if (missingFields.length > 0) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: `Missing required fields: ${missingFields.join(', ')}`
       });
-      return;
     }
 
     // Validate date formats
@@ -31,31 +33,33 @@ export const submitRideRequestForm = async (req: Request, res: Response) => {
     const appointmentTime = new Date(rideData.apt_time);
     const dateOfBirth = new Date(rideData.dob);
 
-    if (isNaN(appointmentDate.getTime()) || isNaN(appointmentTime.getTime()) || isNaN(dateOfBirth.getTime())) {
-      res.status(400).json({
+    if (
+      Number.isNaN(appointmentDate.getTime()) ||
+      Number.isNaN(appointmentTime.getTime()) ||
+      Number.isNaN(dateOfBirth.getTime())
+    ) {
+      return res.status(400).json({
         success: false,
         message: 'Invalid date format provided'
       });
-      return;
     }
 
-    const results = await rideRequest.submitRideRequestForm(rideData)
+    const results = await rideRequest.submitRideRequestForm(rideData);
 
-    if (results.success) {
-      res.status(200).json({
-        success: true,
-        message: 'Ride request form submitted successfully',
-        messageId: results.messageId,
-        contactId: results.documentId
-      });
-      res.status(400).json({
-        success: false,
-        message: results.emailError || 'Failed to send ride request form email',
-        contactId: results.documentId
-      });
-    }
+    // If you want the form to be considered “submitted” even if email fails,
+    // return 200 but expose emailSuccess to the client/admin tools.
+    return res.status(200).json({
+      success: true,
+      message: results.emailSuccess
+        ? 'Ride request form submitted successfully'
+        : 'Ride request saved, but email failed to send',
+      emailSuccess: results.emailSuccess,
+      messageId: results.messageId,
+      emailError: results.emailError,
+      contactId: results.documentId
+    });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Internal server error',
       error: (error as Error).message

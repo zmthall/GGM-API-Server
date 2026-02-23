@@ -9,72 +9,72 @@ import { cryptoService } from "./crypto.services";
 import * as EmailService from "./email.services"
 
 export const submitRideRequestForm = async (rideData: RideRequestData) => {
-  let results: {
-    success: boolean;
-    emailSuccess: boolean;
-    documentId: string | undefined;
-    messageId: string | undefined;
-    emailError?: string | undefined;
+  const results: {
+    success: boolean;          // ✅ DB save success
+    emailSuccess: boolean;     // ✅ email send success
+    documentId?: string;
+    messageId?: string;
+    emailError?: string;
   } = {
-    success: true,
+    success: false,
     emailSuccess: false,
-    documentId: '',
-    messageId: ''
-  }
+    documentId: undefined,
+    messageId: undefined,
+    emailError: undefined,
+  };
 
   // Step 1: encrypt data
   const encryptedData = cryptoService.encryptRideRequest(rideData);
 
   // Step 2: Save to database
-  try {
-    const saveResult = await saveEmailData(encryptedData, 'ride_requests', {
-      contact_type: 'Ride Request'
-    });
-    if(saveResult.id)
-      results.documentId = saveResult.id;
-  } catch (error) {
-    throw new Error(`Failed to save to database: {ERROR} - ${(error as Error).message}`)
+  const saveResult = await saveEmailData(encryptedData, 'ride_requests', {
+    contact_type: 'Ride Request',
+  });
+
+  if (!saveResult?.id) {
+    throw new Error('Failed to save ride request (no document id returned)');
   }
 
+  results.success = true;
+  results.documentId = saveResult.id;
+
   // Step 3: Send email
+  let emailResult:
+    | { success: true; messageId?: string }
+    | { success: false; error?: string };
+
   try {
-    const emailResult = await EmailService.sendRideRequestEmail(rideData);
-    if(emailResult.success) {
-      results.messageId = emailResult.messageId
-      results.emailSuccess = true;
-    } else {
-      results.emailError = emailResult.error;
-      results.emailSuccess = false;
-    }
-  } catch (error) {
-    throw new Error(`Failed to send ride request form email: {ERROR} - ${(error as Error).message}`)
+    emailResult = await EmailService.sendRideRequestEmail(rideData);
+  } catch (err) {
+    // If EmailService throws, capture it as a failure (don’t lose the details)
+    emailResult = { success: false, error: (err as Error).message };
+  }
+
+  if (emailResult.success) {
+    results.emailSuccess = true;
+    results.messageId = emailResult.messageId;
+  } else {
+    results.emailSuccess = false;
+    results.emailError = emailResult.error || 'Unknown email error';
   }
 
   // Step 4: Update database record with email status
-  try {
-    if (results.messageId !== '') {
-      const updateData = {
+  const updateData = results.emailSuccess
+    ? {
         email_status: 'email_sent',
         email_sent_at: new Date().toISOString(),
-        ...(results.messageId && { message_id: results.messageId })
-      };
-      if(results.documentId)
-        await updateDocument('ride_requests', results.documentId, updateData);
-    } else {
-      const updateData = {
+        ...(results.messageId ? { message_id: results.messageId } : {}),
+      }
+    : {
         email_status: 'email_failed',
         email_failed_at: new Date().toISOString(),
-        ...(results.emailError && { email_error: results.emailError })
+        ...(results.emailError ? { email_error: results.emailError } : {}),
       };
-      if(results.documentId)
-        await updateDocument('ride_requests', results.documentId, updateData);
-    }
-  } catch (error) {
-    throw new Error(`Failed to update ride request status: {ERROR} - ${(error as Error).message}`)
-  }
+
+  await updateDocument('ride_requests', results.documentId, updateData);
 
   return results;
-}
+};
 
 export const getAllRideRequests = async (
   filters: Record<string, unknown> = {},
