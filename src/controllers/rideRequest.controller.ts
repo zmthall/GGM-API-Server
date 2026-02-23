@@ -1,6 +1,6 @@
 // /controllers/rideRequest.controller.ts
 import * as rideRequest from '../services/rideRequest.services';
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, Response, RequestHandler } from 'express';
 import contentDisposition from 'content-disposition';
 
 const safe = (s: string) =>
@@ -10,30 +10,27 @@ const safe = (s: string) =>
     .trim()
     .slice(0, 120);
 
-export const submitRideRequestForm = async (req: Request, res: Response) => {
+export const submitRideRequestForm: RequestHandler = async (req, res) => {
   try {
-    const rideData = req.body;
+    const rideData = req.body
 
-    // Validate required fields
     const requiredFields = [
       'name', 'dob', 'phone', 'email', 'med_id',
       'apt_date', 'apt_time', 'pickup_address', 'dropoff_address'
-    ];
-    const missingFields = requiredFields.filter((field) => !rideData?.[field]);
+    ]
+    const missingFields = requiredFields.filter((field) => !rideData?.[field])
 
     if (missingFields.length > 0) {
       res.status(400).json({
         success: false,
         message: `Missing required fields: ${missingFields.join(', ')}`
-      });
-      
-      return;
+      })
+      return
     }
 
-    // Validate date formats
-    const appointmentDate = new Date(rideData.apt_date);
-    const appointmentTime = new Date(rideData.apt_time);
-    const dateOfBirth = new Date(rideData.dob);
+    const appointmentDate = new Date(rideData.apt_date)
+    const appointmentTime = new Date(rideData.apt_time)
+    const dateOfBirth = new Date(rideData.dob)
 
     if (
       Number.isNaN(appointmentDate.getTime()) ||
@@ -43,16 +40,13 @@ export const submitRideRequestForm = async (req: Request, res: Response) => {
       res.status(400).json({
         success: false,
         message: 'Invalid date format provided'
-      });
-
-      return;
+      })
+      return
     }
 
-    const results = await rideRequest.submitRideRequestForm(rideData);
+    const results = await rideRequest.submitRideRequestForm(rideData)
 
-    // If you want the form to be considered “submitted” even if email fails,
-    // return 200 but expose emailSuccess to the client/admin tools.
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: results.emailSuccess
         ? 'Ride request form submitted successfully'
@@ -61,17 +55,17 @@ export const submitRideRequestForm = async (req: Request, res: Response) => {
       messageId: results.messageId,
       emailError: results.emailError,
       contactId: results.documentId
-    });
+    })
+    return
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
       error: (error as Error).message
-    });
-
-    return;
+    })
+    return
   }
-};
+}
 
 export const getAllRideRequests = async (req: Request, res: Response) => {
   try {
