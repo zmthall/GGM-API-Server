@@ -22,10 +22,12 @@ export const submitRideRequestForm = async (req: Request, res: Response) => {
     const missingFields = requiredFields.filter((field) => !rideData?.[field]);
 
     if (missingFields.length > 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: `Missing required fields: ${missingFields.join(', ')}`
       });
+      
+      return;
     }
 
     // Validate date formats
@@ -38,10 +40,12 @@ export const submitRideRequestForm = async (req: Request, res: Response) => {
       Number.isNaN(appointmentTime.getTime()) ||
       Number.isNaN(dateOfBirth.getTime())
     ) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid date format provided'
       });
+
+      return;
     }
 
     const results = await rideRequest.submitRideRequestForm(rideData);
@@ -59,11 +63,13 @@ export const submitRideRequestForm = async (req: Request, res: Response) => {
       contactId: results.documentId
     });
   } catch (error) {
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Internal server error',
       error: (error as Error).message
     });
+
+    return;
   }
 };
 
@@ -97,6 +103,8 @@ export const getAllRideRequests = async (req: Request, res: Response) => {
       success: false,
       message: (error as Error).message,
     })
+    
+    return;
   }
 }
 
@@ -131,6 +139,8 @@ export const getRideRequestById = async (req: Request, res: Response) => {
       success: false,
       message: (error as Error).message
     });
+
+    return;
   }
 };
 
