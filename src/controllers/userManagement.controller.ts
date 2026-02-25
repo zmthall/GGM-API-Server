@@ -46,10 +46,10 @@ export const createUser = async (req: Request, res: Response) => {
     }
 
     // Validate role if provided
-    if (role && !['admin', 'user'].includes(role)) {
+    if (role && !['admin', 'user', 'correspondence'].includes(role)) {
       res.status(400).json({
         success: false,
-        message: 'Role must be either "admin" or "user"'
+        message: 'Role must be either "admin", "user", or "correspondence"'
       });
       return;
     }
@@ -279,10 +279,10 @@ export const updateUserRole = async (req: Request, res: Response) => {
     }
 
     // Validate role
-    if (!['admin', 'user'].includes(role)) {
+    if (!['admin', 'user', 'correspondence'].includes(role)) {
       res.status(400).json({
         success: false,
-        message: 'Role must be either "admin" or "user"'
+        message: 'Role must be either "admin", "user", or "correspondence"'
       });
       return;
     }
