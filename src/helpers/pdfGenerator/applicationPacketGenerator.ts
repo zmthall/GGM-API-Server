@@ -1,6 +1,5 @@
 import PDFDocument from 'pdfkit'
 import path from 'node:path'
-import { promises as fs } from 'node:fs'
 import { getStorage } from 'firebase-admin/storage'
 import { PDFDocument as PDFLibDocument } from 'pdf-lib'
 
@@ -22,11 +21,14 @@ const APPENDIX_FILES = {
   caps: 'caps.pdf'
 } as const
 
-function resolveProjectRoot() {
-  const cwd = process.cwd()
-  const marker = `${path.sep}.output${path.sep}`
-  const idx = cwd.lastIndexOf(marker)
-  return idx === -1 ? cwd : cwd.slice(0, idx)
+// Set APP_STATIC_BASE_URL in your .env — e.g. http://localhost:3000 or https://goldengatemanor.com
+const APP_STATIC_BASE_URL = process.env.APP_STATIC_BASE_URL ?? 'http://localhost:3000'
+
+async function loadAppendixPdf(name: keyof typeof APPENDIX_FILES): Promise<Buffer> {
+  const url = `${APP_STATIC_BASE_URL}/static/application/${APPENDIX_FILES[name]}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to fetch appendix "${name}": ${res.status} ${res.statusText} (${url})`)
+  return Buffer.from(await res.arrayBuffer())
 }
 
 function extOf(filename: string) {
@@ -71,12 +73,6 @@ async function downloadFromFirebase(fileData: FileData): Promise<Buffer> {
   const file = bucket.file(fileData.filename)
   const [buf] = await file.download()
   return Buffer.from(buf)
-}
-
-async function loadAppendixPdf(name: keyof typeof APPENDIX_FILES): Promise<Buffer> {
-  const base = path.join(resolveProjectRoot(), 'static', 'application')
-  const fullPath = path.join(base, APPENDIX_FILES[name])
-  return await fs.readFile(fullPath)
 }
 
 async function mergePdfBuffers(buffers: Buffer[]): Promise<Buffer> {
@@ -302,7 +298,6 @@ class ApplicationSummaryPDFGenerator {
     const valueX = left + labelW + gap
     const valueW = width - labelW - gap
 
-    // Measure heights with the actual widths
     doc.save()
     doc.font('Helvetica-Bold').fontSize(11)
     const labelH = doc.heightOfString(label, { width: labelW })
@@ -324,7 +319,6 @@ class ApplicationSummaryPDFGenerator {
     doc.font('Helvetica-Bold').fontSize(11).fillColor('#2c3e50').text(label, left, y, { width: labelW })
     doc.font('Helvetica').fontSize(11).fillColor('#111827').text(value || '', valueX, y, { width: valueW })
 
-    // FIX: Underline snug beneath rendered value text using actual measured value height
     if (opts?.underline !== false) {
       doc.save()
       doc.font('Helvetica').fontSize(11)
@@ -363,7 +357,6 @@ class ApplicationSummaryPDFGenerator {
     const rightValueX = rightX + rightLabelW + pad
     const rightValueW = colW - rightLabelW - pad
 
-    // Heights
     doc.save()
     doc.font('Helvetica').fontSize(11)
     const lineH = doc.currentLineHeight()
@@ -382,7 +375,6 @@ class ApplicationSummaryPDFGenerator {
     doc.font('Helvetica-Bold').fontSize(11).fillColor('#2c3e50').text(rightField.label, rightX, y, { width: rightLabelW })
     doc.font('Helvetica').fontSize(11).fillColor('#111827').text(rightField.value || '', rightValueX, y, { width: rightValueW })
 
-    // FIX: Underline snug beneath rendered text using actual line height
     doc.save()
     doc.font('Helvetica').fontSize(11)
     const singleLineH = doc.currentLineHeight()
@@ -425,11 +417,11 @@ class ApplicationSummaryPDFGenerator {
     this.addSectionTitle(doc, app, kind, 'Work Information')
 
     this.addFormRow(doc, app, kind, 'Learned about us:', safeText(w?.learnedAboutUs), { underline: true })
-    if (safeText(w?.otherExplain)) this.addFormRow(doc, app, kind, 'Other (details):', safeText(w?.otherExplain), { underline: true, minHeight: 22 })
+    if (safeText(w?.otherExplain)) this.addFormRow(doc, app, kind, 'Other (details):', safeText(w?.otherExplain), { underline: false, minHeight: 22 })
 
     this.addFormRow(doc, app, kind, 'Worked here before:', yesNo(w?.hasWorkedAtGoldenGate), { underline: false })
     this.addFormRow(doc, app, kind, 'Employment type:', safeText(w?.employmentType), { underline: true })
-    if (safeText(w?.availability)) this.addFormRow(doc, app, kind, 'Availability:', safeText(w?.availability), { underline: true, minHeight: 22 })
+    if (safeText(w?.availability)) this.addFormRow(doc, app, kind, 'Availability:', safeText(w?.availability), { underline: false, minHeight: 22 })
 
     this.addFormRow(doc, app, kind, 'Willing overtime:', yesNo(w?.willingToWorkOvertime), { underline: false })
     this.addFormRow(doc, app, kind, 'Preferred pay:', safeText(w?.preferablePayRate), { underline: true })
@@ -482,7 +474,6 @@ class ApplicationSummaryPDFGenerator {
     doc.text(mvrLine, { align: 'left' })
     doc.text(dlLine, { align: 'left' })
 
-    // FIX: Added moveDown before the note so Digital Signature header has breathing room
     doc.moveDown(0.3)
     doc.fontSize(9).fillColor('#7f8c8d').font('Helvetica')
       .text('If a file is not PDF/image, a placeholder page will be included telling staff to print it separately.')
@@ -501,7 +492,6 @@ class ApplicationSummaryPDFGenerator {
     const width = doc.page.width - doc.page.margins.left - doc.page.margins.right
     const attestation = 'The applicant submitted this application online and digitally signed/attested that the information provided was true and correct and agreed to the online attestation presented on the website.'
 
-    // Measure paragraph height to prevent PDFKit auto page breaks
     doc.save()
     doc.font('Helvetica').fontSize(9.5)
     const attH = doc.heightOfString(attestation, { width })
@@ -514,7 +504,6 @@ class ApplicationSummaryPDFGenerator {
 
     doc.moveDown(0.8)
 
-    // Signature line: "Signature:" + name on the line, then gray signed date under the line
     const label = 'Signature:'
     const labelW = this.measureLabelWidth(doc, label)
     const gap = 8
@@ -544,12 +533,11 @@ class ApplicationSummaryPDFGenerator {
     const last = safeText(app.personal?.lastName || app.last_name)
     const leftText = `${last}${last && first ? ', ' : ''}${first}`.trim() || 'Applicant'
 
-    // FIX: Corrected column layout so "Reviewed By:" stays centered and never overflows
     const leftX = 50
     const leftW = 150
     const rightW = 160
-    const totalW = doc.page.width - leftX * 2   // full usable strip (e.g. 595 - 100 = 495)
-    const centerW = totalW - leftW - rightW      // remaining space for center column
+    const totalW = doc.page.width - leftX * 2
+    const centerW = totalW - leftW - rightW
     const centerX = leftX + leftW
     const rightX = leftX + totalW - rightW
 

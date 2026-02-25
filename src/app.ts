@@ -69,6 +69,10 @@ app.use(express.json());
 const uploadsPath = path.resolve(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadsPath));
 
+// Serve application form PDFs (background-check, caps, availability-schedule)
+const applicationStaticPath = path.resolve(__dirname, 'static', 'application');
+app.use('/static/application', express.static(applicationStaticPath));
+
 const isHealth = (p: string) => /^\/health(?:$|\/)/.test(p);
 
 app.use(routeLogger({
