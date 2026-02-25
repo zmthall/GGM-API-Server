@@ -22,7 +22,7 @@ const APPENDIX_FILES = {
 } as const
 
 // Set APP_STATIC_BASE_URL in your .env — e.g. http://localhost:3000 or https://goldengatemanor.com
-const APP_STATIC_BASE_URL = process.env.APP_STATIC_BASE_URL ?? 'http://localhost:3000'
+const APP_STATIC_BASE_URL = 'https://api.goldengatemanor.com'
 
 async function loadAppendixPdf(name: keyof typeof APPENDIX_FILES): Promise<Buffer> {
   const url = `${APP_STATIC_BASE_URL}/static/application/${APPENDIX_FILES[name]}`
