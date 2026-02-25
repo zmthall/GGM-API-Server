@@ -1,9 +1,27 @@
-import { createDocumentWithId, createFirebaseUser, deleteDocument, deleteFirebaseUser, getAllDocuments, getDocument, getPaginatedDocuments, updateDocument, updateFirebaseUser } from "../helpers/firebase";
+import {
+  createDocumentWithId,
+  createFirebaseUser,
+  deleteDocument,
+  deleteFirebaseUser,
+  getPaginatedDocuments,
+  getDocument,
+  updateDocument,
+  updateFirebaseUser
+} from "../helpers/firebase";
 import { PaginatedResult, PaginationOptions } from "../types/pagination";
-import type { UserProfile } from "../types/user";
+import type { UserProfile, UserRole } from "../types/user";
+
+const ALLOWED_ROLES: UserRole[] = ['admin', 'correspondence', 'user'];
+
+function normalizeRole(role?: unknown): UserRole {
+  const v = String(role ?? '').trim().toLowerCase();
+  if (v === 'admin') return 'admin';
+  if (v === 'correspondence') return 'correspondence';
+  return 'user';
+}
 
 export const createUser = async (
-  userData: { email: string; password: string; displayName?: string; role?: 'admin' | 'user' },
+  userData: { email: string; password: string; displayName?: string; role?: UserRole },
   createdByUid: string
 ): Promise<{ uid: string; email: string; displayName?: string; role: string }> => {
   try {
@@ -14,16 +32,18 @@ export const createUser = async (
       displayName: userData.displayName
     });
 
+    const role = normalizeRole(userData.role);
+
     // Create user profile in Firestore
     const userProfile = {
       email: userData.email,
       displayName: userData.displayName || '',
-      role: userData.role || 'user',
+      role,
       status: 'active',
       created_at: new Date().toISOString(),
       created_by: createdByUid
     };
-    
+
     await createDocumentWithId('users', firebaseUser.uid, userProfile);
 
     return {
@@ -40,10 +60,7 @@ export const createUser = async (
 
 export const deleteUser = async (uid: string): Promise<void> => {
   try {
-    // Delete user from Firebase Auth
     await deleteFirebaseUser(uid);
-
-    // Delete user profile from Firestore
     await deleteDocument('users', uid);
   } catch (error) {
     throw new Error(`Failed to delete user: ${(error as Error).message}`);
@@ -52,7 +69,6 @@ export const deleteUser = async (uid: string): Promise<void> => {
 
 export const disableUserToggle = async (uid: string, disabled: boolean = true, requester: string): Promise<void> => {
   try {
-    // Disable user profile from Firebase Auth
     await updateFirebaseUser(uid, { disabled });
 
     const updateData = {
@@ -61,14 +77,13 @@ export const disableUserToggle = async (uid: string, disabled: boolean = true, r
         at: new Date().toISOString(),
         by: requester
       }
-    }
+    };
 
-    // Disable user profile from Firestore
     await updateDocument('users', uid, updateData);
   } catch (error) {
     throw new Error(`Failed to disable user: ${(error as Error).message}`);
   }
-}
+};
 
 export const getAllUsers = async (options: PaginationOptions = {}): Promise<PaginatedResult<UserProfile>> => {
   try {
@@ -76,17 +91,18 @@ export const getAllUsers = async (options: PaginationOptions = {}): Promise<Pagi
     const pageSize = options.pageSize || 10;
 
     const result = await getPaginatedDocuments<UserProfile>(
-          'users',
-          {}, // No filter needed unless you want to exclude certain leads
-          {}, // No omits
-          {
-            pageSize,
-            page,
-            orderField: 'created_at',
-            orderDirection: 'desc', // Most recent leads first
-            ...options
-          }
-        );
+      'users',
+      {},
+      {},
+      {
+        pageSize,
+        page,
+        orderField: 'created_at',
+        orderDirection: 'desc',
+        ...options
+      }
+    );
+
     return {
       data: result.data,
       pagination: result.pagination
@@ -97,11 +113,17 @@ export const getAllUsers = async (options: PaginationOptions = {}): Promise<Pagi
 };
 
 export const updateUserRole = async (
-  uid: string, 
-  role: 'admin' | 'user',
+  uid: string,
+  roleInput: UserRole,
   requester: string
-): Promise<{ id: string; role: string; updated: { at: string, by?: string }}> => {
+): Promise<{ id: string; role: string; updated: { at: string; by?: string } }> => {
   try {
+    const role = normalizeRole(roleInput);
+
+    if (!ALLOWED_ROLES.includes(role)) {
+      throw new Error(`Invalid role: ${role}`);
+    }
+
     const updateData = {
       role,
       updated: {
@@ -118,57 +140,50 @@ export const updateUserRole = async (
 };
 
 export const updateLastLogin = async (uid: string):
-Promise<{ id: string; lastLogin: string; }> => { 
+Promise<{ id: string; lastLogin: string; }> => {
   try {
     const loginDate = (new Date()).toISOString();
-  
-    const result = await updateDocument('users', uid, {lastLogin: loginDate});
-  
+    const result = await updateDocument('users', uid, { lastLogin: loginDate });
     return result;
   } catch (error) {
     throw new Error(`Failed to last login date: ${(error as Error).message}`);
   }
-}
+};
 
 export const updateLastPasswordReset = async (uid: string):
-Promise<{ id: string; lastPasswordReset: string; }> => { 
+Promise<{ id: string; lastPasswordReset: string; }> => {
   try {
     const lastPasswordReset = (new Date()).toISOString();
-  
-    const result = await updateDocument('users', uid, {lastPasswordReset});
-  
+    const result = await updateDocument('users', uid, { lastPasswordReset });
     return result;
   } catch (error) {
     throw new Error(`Failed to last login date: ${(error as Error).message}`);
   }
-}
+};
 
-export const getUserProfile = async (uid: string): 
+export const getUserProfile = async (uid: string):
 Promise<UserProfile | null> => {
   try {
-    const result = await getDocument('users', uid)
-
+    const result = await getDocument('users', uid);
     return result as UserProfile | null;
   } catch (error) {
-    throw new Error(`cannot get user profile: ${(error as Error).message}`)
+    throw new Error(`cannot get user profile: ${(error as Error).message}`);
   }
-} 
-
+};
 
 export const updateDisplayName = async (uid: string, newDisplayName: string, requester: string | undefined = undefined):
-Promise<{ id: string; displayName: string; }> => { 
+Promise<{ id: string; displayName: string; }> => {
   try {
     const updateData = {
       displayName: newDisplayName,
       updated: {
         at: new Date().toISOString(),
         by: requester || uid
-      } 
-    }
+      }
+    };
     const result = await updateDocument('users', uid, updateData);
-  
     return result;
   } catch (error) {
     throw new Error(`Failed to last login date: ${(error as Error).message}`);
   }
-}
+};

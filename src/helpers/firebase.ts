@@ -4,6 +4,7 @@ import type { FirebaseDocument, CreateDocumentResult } from '../types/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import type { PaginatedResult, PaginationOptions } from '../types/pagination';
 import { Lead } from '../types/lead';
+import type { ApplicationRequestStatus } from '../types/application' // ✅ add this import at the top with the others
 
 export const createDocument = async <T extends Record<string, any>>(
   collectionName: string, 
@@ -392,6 +393,46 @@ export const saveEmailData = async <T extends Record<string, any>>(
     return result;
   } catch (error) {
     throw new Error(`Failed to save email data: ${(error as Error).message}`);
+  }
+};
+
+export const saveApplicationData = async <T extends Record<string, any>>(
+  applicationData: T,
+  collectionName: string = 'job_applications',
+  options: {
+    contact_type?: string;
+    tags?: string[];
+    status?: ApplicationRequestStatus | string;
+    position?: string;
+    additionalFields?: Record<string, any>;
+  } = {}
+): Promise<{ id: string; data: any }> => {
+  try {
+    const {
+      contact_type = 'Job Application',
+      tags = [],
+      status = 'new',
+      position = '',
+      additionalFields = {},
+    } = options;
+
+    const now = new Date().toISOString();
+
+    const documentData = {
+      contact_type,
+      ...applicationData,
+      tags,
+      status,
+      position,
+      created_at: now,
+      updated_at: now,
+      ...additionalFields,
+    };
+
+    const result = await createDocument(collectionName, documentData);
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to save application data: ${(error as Error).message}`);
   }
 };
 

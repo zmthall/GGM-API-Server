@@ -1,3 +1,4 @@
+import { ApplicationData, ApplicationDocument } from "./application";
 import { ContactFormData, ContactFormDocument } from "./contactForm";
 import { RideRequestData, RideRequestDocument } from "./rideRequest";
 
@@ -18,4 +19,7 @@ export type CryptoSvc = {
   encryptContact(contactData: ContactFormData, aad?: string): ContactFormData;
   decryptContact(contactData: ContactFormDocument, aad?: string): ContactFormDocument;
   decryptContacts(contactDataArr: ContactFormDocument[], add?: string): ContactFormDocument[];
+  encryptApplication: (app: ApplicationData, aad?: string) => ApplicationData
+  decryptApplication: (app: ApplicationDocument, aad?: string) => ApplicationDocument
+  decryptApplications: (arr: ApplicationDocument[], aad?: string) => ApplicationDocument[]
 };

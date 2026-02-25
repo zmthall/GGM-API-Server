@@ -50,3 +50,24 @@ export interface ApplicationData {
   driving: ApplicationDriving;
   work: ApplicationWork;
 }
+
+export type ApplicationRequestStatus =
+  | 'new'
+  | 'reviewing'
+  | 'interviewed'
+  | 'do_not_hire'
+  | 'spam'
+  | 'closed'
+
+export interface ApplicationDocument extends ApplicationData {
+  id: string
+  contact_type: string
+  tags: string[]
+  position: string
+  first_name: string
+  last_name: string
+  phone: string
+  created_at: string
+  updated_at: string
+  status: ApplicationRequestStatus
+}
