@@ -17,7 +17,7 @@ const allowedOrigins = [
 // Routing imports
 import mediaRouter from './routes/media.routes';
 import eventRouter from './routes/event.routes';
-import jobRouter from './routes/jobs.routes';
+import jobRouter from './routes/job.routes';
 import recaptcha from './routes/recaptcha.routes';
 import email from './routes/email.routes'
 import application from './routes/application.routes';
@@ -30,6 +30,7 @@ import community from './routes/communityImages.routes'
 import crypto from './routes/crypto.routes'
 import verify from './routes/verify.routes'
 import blogCalendar from './routes/blogCalendar.routes'
+import notifications from './routes/notification.routes'
 
 import { errorHandler } from './middlewares/errorHandler';
 import { routeLogger } from './middlewares/routeLogs';
@@ -99,6 +100,7 @@ app.use('/api/community', community)
 app.use('/api/crypto', crypto)
 app.use('/api/verify', verify)
 app.use('/api/calendar', blogCalendar)
+app.use('/api/notification', notifications)
 
 app.get('/', (req, res) => {
     res.status(403).send('<h1>Access is not Available.</h1>');

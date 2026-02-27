@@ -7,6 +7,10 @@ import { PaginatedResult, PaginationOptions } from "../types/pagination";
 import { PDFFile } from "../types/PDF";
 import { cryptoService } from "./crypto.services";
 import * as EmailService from '../services/email.services';
+import { increaseNotificationCount, syncNotificationCountOnStatusChange } from "./notification.services";
+import { NOTIFICATION_TYPE_BY_COLLECTION } from "../config/notification";
+
+const COLLECTION = 'contact_messages'
 
 export const submitContactForm = async (contactData: ContactFormData) => {
   let results: {
@@ -27,9 +31,12 @@ export const submitContactForm = async (contactData: ContactFormData) => {
 
   // Step 2: Save to database
   try {
-    const saveResult = await saveEmailData(encryptedData, 'contact_messages');
-    if(saveResult.id)
+    const saveResult = await saveEmailData(encryptedData, COLLECTION, { contact_type: 'Contact Form' });
+
+    if(saveResult.id) {
       results.documentId = saveResult.id;
+      await increaseNotificationCount(NOTIFICATION_TYPE_BY_COLLECTION[COLLECTION], 1)
+    } 
   } catch (error) {
     throw new Error(`Failed to save to database: {ERROR} - ${(error as Error).message}`)
   }
@@ -243,12 +250,23 @@ export const updateContactFormStatus = async (
   status: 'new' | 'completed' | 'reviewing' | 'declined'
 ): Promise<{ id: string; status: string; updated_at: string }> => {
   try {
+    const existing = await getDocument('contact_messages', id) as { status?: string } | null
+    const prevStatus = existing?.status
+
     const updateData = {
       status,
       updated_at: new Date().toISOString()
     };
 
     const result = await updateDocument('contact_messages', id, updateData);
+
+    if(result.id)
+      await syncNotificationCountOnStatusChange(
+        'messages',
+        prevStatus,
+        status
+      )
+
     return result;
   } catch (error) {
     throw new Error(`Failed to update contact form status: ${(error as Error).message}`);

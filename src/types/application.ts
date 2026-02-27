@@ -58,6 +58,7 @@ export type ApplicationRequestStatus =
   | 'do_not_hire'
   | 'spam'
   | 'closed'
+  
 
 export interface ApplicationDocument extends ApplicationData {
   id: string

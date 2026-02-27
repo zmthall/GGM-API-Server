@@ -2,6 +2,7 @@
 import * as rideRequest from '../services/rideRequest.services';
 import type { NextFunction, Request, Response, RequestHandler } from 'express';
 import contentDisposition from 'content-disposition';
+import { increaseNotificationCount } from '../services/notification.services';
 
 const safe = (s: string) =>
   (s ?? '')
@@ -44,7 +45,7 @@ export const submitRideRequestForm: RequestHandler = async (req, res) => {
       return
     }
 
-    const results = await rideRequest.submitRideRequestForm(rideData)
+    const results = await rideRequest.submitRideRequestForm(rideData);
 
     res.status(200).json({
       success: true,
@@ -83,7 +84,7 @@ export const getAllRideRequests = async (req: Request, res: Response) => {
     if (req.query.name) filters.name = req.query.name
     if (req.query.med_id) filters.med_id = req.query.med_id
 
-    const omit = !!req.query.omit
+    const omit = req.query.omit === undefined ? undefined : req.query.omit === "true";
 
     const result = await rideRequest.getAllRideRequests(filters, omit, { page, pageSize })
 

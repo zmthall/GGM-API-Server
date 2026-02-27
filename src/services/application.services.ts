@@ -11,6 +11,8 @@ import { deleteDocument, getDocument, getPaginatedDocuments, saveApplicationData
 // ✅ PDF packet generator
 import { ApplicationPacketPDFGenerator } from '../helpers/pdfGenerator/applicationPacketGenerator'
 import { Zippper } from '../helpers/fileZip'
+import { increaseNotificationCount, syncNotificationCountOnStatusChange } from './notification.services'
+import { NOTIFICATION_TYPE_BY_COLLECTION } from '../config/notification'
 
 type PDFFile = { buffer: Buffer; filename: string }
 
@@ -87,15 +89,17 @@ export const submitApplication = async (applicationData: ApplicationData, files:
   const encryptedData = cryptoService.encryptApplication(applicationData)
 
   // Step 2: save encrypted + store queryable meta fields
-  const saved = await saveApplicationData(encryptedData, COLLECTION, {
+  const saveResult = await saveApplicationData(encryptedData, COLLECTION, {
     status: 'new',
     position,
     additionalFields: { department, position_name }
   })
 
-  if (!saved?.id) throw new Error('Failed to save application (no document id returned)')
+  if(saveResult.id) await increaseNotificationCount(NOTIFICATION_TYPE_BY_COLLECTION[COLLECTION])
 
-  const documentId = saved.id
+  if (!saveResult?.id) throw new Error('Failed to save application (no document id returned)')
+
+  const documentId = saveResult.id
 
   // Upload files, then merge + re-encrypt and update
   const uploaded: Record<string, FileData> = {}
@@ -150,11 +154,19 @@ export const updateApplicationStatus = async (
   id: string,
   statusInput: unknown
 ): Promise<{ id: string; status: ApplicationRequestStatus; updated_at: string }> => {
+  const existing = await getDocument(COLLECTION, id) as { status?: string } | null
+  const prevStatus = existing?.status
+
   const status = normalizeStatus(statusInput)
   if (!status) throw new Error('Invalid status')
 
   const updated_at = new Date().toISOString()
+
   const result = await updateDocument(COLLECTION, id, { status, updated_at })
+  if(result.id)
+    await syncNotificationCountOnStatusChange('applications', prevStatus, status)
+
+
   return result as { id: string; status: ApplicationRequestStatus; updated_at: string }
 }
 

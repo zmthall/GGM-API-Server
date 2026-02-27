@@ -7,6 +7,10 @@ import type { PaginatedResult, PaginationOptions } from "../types/pagination";
 import type { PDFFile } from "../types/PDF";
 import { cryptoService } from "./crypto.services";
 import * as EmailService from "./email.services"
+import { increaseNotificationCount, syncNotificationCountOnStatusChange } from "./notification.services";
+import { NOTIFICATION_TYPE_BY_COLLECTION } from "../config/notification";
+
+const COLLECTION = 'ride_requests'
 
 export const submitRideRequestForm = async (rideData: RideRequestData) => {
   const results: {
@@ -27,9 +31,13 @@ export const submitRideRequestForm = async (rideData: RideRequestData) => {
   const encryptedData = cryptoService.encryptRideRequest(rideData);
 
   // Step 2: Save to database
-  const saveResult = await saveEmailData(encryptedData, 'ride_requests', {
+  const saveResult = await saveEmailData(encryptedData, COLLECTION, {
     contact_type: 'Ride Request',
   });
+
+  if (saveResult?.id) {
+    await increaseNotificationCount(NOTIFICATION_TYPE_BY_COLLECTION[COLLECTION], 1)
+  }
 
   if (!saveResult?.id) {
     throw new Error('Failed to save ride request (no document id returned)');
@@ -170,12 +178,20 @@ export const updateRideRequestStatus = async (
   status: 'new' | 'completed' | 'reviewing' | 'declined'
 ): Promise<{ id: string; status: string; updated_at: string }> => {
   try {
+    const existing = await getDocument('ride_requests', id) as { status?: string } | null
+    const prevStatus = existing?.status
+
     const updateData = {
       status,
       updated_at: new Date().toISOString()
     };
 
     const result = await updateDocument('ride_requests', id, updateData);
+
+    if(result.id)
+      await syncNotificationCountOnStatusChange('ride_requests', prevStatus, status);
+
+
     return result;
   } catch (error) {
     throw new Error(`Failed to update ride request status: ${(error as Error).message}`);
