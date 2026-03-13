@@ -70,6 +70,83 @@ export interface UpdateRideRequestInput {
   rawPayload?: Record<string, unknown>
 }
 
+export const upsertRideRequest = async (
+  input: CreateRideRequestInput
+): Promise<RideRequestRecord> => {
+  const result = await postgresPool.query(
+    `
+    insert into ${TABLE_NAME} (
+      id,
+      acknowledge,
+      apt_date,
+      apt_time,
+      contact_type,
+      created_at,
+      dob,
+      dropoff_address,
+      email,
+      email_sent_at,
+      email_status,
+      med_id,
+      message_id,
+      name,
+      notes,
+      phone,
+      pickup_address,
+      status,
+      tags,
+      raw_payload
+    )
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb)
+    on conflict (id)
+    do update set
+      acknowledge = excluded.acknowledge,
+      apt_date = excluded.apt_date,
+      apt_time = excluded.apt_time,
+      contact_type = excluded.contact_type,
+      dob = excluded.dob,
+      dropoff_address = excluded.dropoff_address,
+      email = excluded.email,
+      email_sent_at = excluded.email_sent_at,
+      email_status = excluded.email_status,
+      med_id = excluded.med_id,
+      message_id = excluded.message_id,
+      name = excluded.name,
+      notes = excluded.notes,
+      phone = excluded.phone,
+      pickup_address = excluded.pickup_address,
+      status = excluded.status,
+      tags = excluded.tags,
+      raw_payload = excluded.raw_payload
+    returning *
+    `,
+    [
+      input.id,
+      input.acknowledge ?? false,
+      input.aptDate ?? null,
+      input.aptTime ?? null,
+      input.contactType,
+      input.createdAt ?? new Date(),
+      input.dob,
+      input.dropoffAddress,
+      input.email,
+      input.emailSentAt ?? null,
+      input.emailStatus,
+      input.medId,
+      input.messageId,
+      input.name,
+      input.notes,
+      input.phone,
+      input.pickupAddress,
+      input.status,
+      input.tags ?? [],
+      JSON.stringify(input.rawPayload ?? {})
+    ]
+  )
+
+  return mapRow(result.rows[0])
+}
+
 const mapRow = (row: Record<string, unknown>): RideRequestRecord => {
   return {
     id: String(row.id),

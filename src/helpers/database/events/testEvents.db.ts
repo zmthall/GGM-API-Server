@@ -19,7 +19,7 @@ const run = async (): Promise<void> => {
       address: '123 Main St, Pueblo, CO',
       archived: false,
       dateStart: new Date('2099-01-01T10:00:00.000Z'),
-      dateTo: new Date('2099-01-01T12:00:00.000Z'),
+      dateEnd: new Date('2099-01-01T12:00:00.000Z'),
       description: 'Test community event.',
       link: 'https://example.com/event',
       location: 'Community Center',

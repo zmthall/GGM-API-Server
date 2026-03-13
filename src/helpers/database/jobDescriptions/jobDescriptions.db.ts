@@ -36,6 +36,46 @@ export interface UpdateJobDescriptionInput {
   rawPayload?: Record<string, unknown>
 }
 
+export const upsertJobDescription = async (
+  input: CreateJobDescriptionInput
+): Promise<JobDescriptionRecord> => {
+  const result = await postgresPool.query(
+    `insert into ${TABLE_NAME} (
+      id,
+      title,
+      description,
+      responsibilities,
+      qualifications,
+      select_label,
+      shifts,
+      raw_payload
+    )
+    values ($1,$2,$3,$4,$5,$6,$7,$8::jsonb)
+    on conflict (id)
+    do update set
+      title = excluded.title,
+      description = excluded.description,
+      responsibilities = excluded.responsibilities,
+      qualifications = excluded.qualifications,
+      select_label = excluded.select_label,
+      shifts = excluded.shifts,
+      raw_payload = excluded.raw_payload
+    returning *`,
+    [
+      input.id,
+      input.title,
+      input.description,
+      input.responsibilities,
+      input.qualifications,
+      input.selectLabel,
+      input.shifts,
+      JSON.stringify(input.rawPayload ?? {})
+    ]
+  )
+
+  return mapRow(result.rows[0])
+}
+
 const mapRow = (row: Record<string, unknown>): JobDescriptionRecord => {
   return {
     id: String(row.id),

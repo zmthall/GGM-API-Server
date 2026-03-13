@@ -26,6 +26,38 @@ export interface UpdateBlogCalendarInput {
   rawPayload?: Record<string, unknown>
 }
 
+export const upsertBlogCalendar = async (
+  input: CreateBlogCalendarInput
+): Promise<BlogCalendarRecord> => {
+  const result = await postgresPool.query(
+    `insert into ${TABLE_NAME} (
+      id,
+      calendar_key,
+      csv,
+      created_at,
+      updated_at,
+      raw_payload
+    )
+    values ($1,$2,$3,$4,$5,$6::jsonb)
+    on conflict (id)
+    do update set
+      calendar_key = excluded.calendar_key,
+      csv = excluded.csv,
+      raw_payload = excluded.raw_payload
+    returning *`,
+    [
+      input.id,
+      input.calendarKey,
+      input.csv,
+      input.createdAt ?? new Date(),
+      input.updatedAt ?? new Date(),
+      JSON.stringify(input.rawPayload ?? {})
+    ]
+  )
+
+  return mapRow(result.rows[0])
+}
+
 const mapRow = (row: Record<string, unknown>): BlogCalendarRecord => {
   return {
     id: String(row.id),

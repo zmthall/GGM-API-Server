@@ -19,6 +19,60 @@ export interface UpdateCorrespondenceCountsInput {
   rideRequestsNew?: number
   rawPayload?: Record<string, unknown>
 }
+export interface UpsertCorrespondenceCountsInput {
+  applicationsNew: number
+  messagesNew: number
+  rideRequestsNew: number
+  createdAt?: Date | null
+  updatedAt?: Date | null
+  rawPayload?: Record<string, unknown>
+}
+
+export const upsertCorrespondenceCounts = async (
+  input: UpsertCorrespondenceCountsInput
+): Promise<CorrespondenceCountsRecord> => {
+  const result = await postgresPool.query(
+    `insert into ${TABLE_NAME} (
+        id,
+        applications_new,
+        messages_new,
+        ride_requests_new,
+        created_at,
+        updated_at,
+        raw_payload
+      )
+      values ($1, $2, $3, $4, $5, $6, $7::jsonb)
+      on conflict (id)
+      do update set
+        applications_new = excluded.applications_new,
+        messages_new = excluded.messages_new,
+        ride_requests_new = excluded.ride_requests_new,
+        raw_payload = excluded.raw_payload
+      returning
+        id,
+        applications_new,
+        messages_new,
+        ride_requests_new,
+        created_at,
+        updated_at,
+        raw_payload;`,
+    [
+      SINGLETON_ID,
+      input.applicationsNew,
+      input.messagesNew,
+      input.rideRequestsNew,
+      input.createdAt ?? new Date(),
+      input.updatedAt ?? new Date(),
+      JSON.stringify(input.rawPayload ?? {})
+    ]
+  )
+
+  if (!result.rows.length) {
+    throw new Error('Failed to upsert correspondence counts.')
+  }
+
+  return mapRowToCorrespondenceCountsRecord(result.rows[0])
+}
 
 const mapRowToCorrespondenceCountsRecord = (row: Record<string, unknown>): CorrespondenceCountsRecord => {
   return {

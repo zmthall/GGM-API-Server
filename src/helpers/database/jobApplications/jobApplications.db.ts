@@ -49,6 +49,62 @@ export interface UpdateJobApplicationInput {
   rawPayload?: Record<string, unknown>
 }
 
+export const upsertJobApplication = async (
+  input: CreateJobApplicationInput
+): Promise<JobApplicationRecord> => {
+  const result = await postgresPool.query(
+    `
+    insert into ${TABLE_NAME} (
+      id,
+      contact_type,
+      created_at,
+      department,
+      position,
+      position_name,
+      status,
+      tags,
+      personal_payload,
+      driving_payload,
+      work_payload,
+      resume_payload,
+      raw_payload
+    )
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12::jsonb,$13::jsonb)
+    on conflict (id)
+    do update set
+      contact_type = excluded.contact_type,
+      department = excluded.department,
+      position = excluded.position,
+      position_name = excluded.position_name,
+      status = excluded.status,
+      tags = excluded.tags,
+      personal_payload = excluded.personal_payload,
+      driving_payload = excluded.driving_payload,
+      work_payload = excluded.work_payload,
+      resume_payload = excluded.resume_payload,
+      raw_payload = excluded.raw_payload
+    returning *
+    `,
+    [
+      input.id,
+      input.contactType,
+      input.createdAt ?? new Date(),
+      input.department,
+      input.position,
+      input.positionName,
+      input.status,
+      input.tags ?? [],
+      JSON.stringify(input.personalPayload ?? {}),
+      JSON.stringify(input.drivingPayload ?? {}),
+      JSON.stringify(input.workPayload ?? {}),
+      JSON.stringify(input.resumePayload ?? {}),
+      JSON.stringify(input.rawPayload ?? {})
+    ]
+  )
+
+  return mapRow(result.rows[0])
+}
+
 const mapRow = (row: Record<string, unknown>): JobApplicationRecord => {
   return {
     id: String(row.id),

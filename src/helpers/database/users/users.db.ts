@@ -41,6 +41,51 @@ export interface UpdateUserInput {
   rawPayload?: Record<string, unknown>
 }
 
+export const upsertUser = async (input: CreateUserInput): Promise<UserRecord> => {
+  const result = await postgresPool.query(
+    `
+    insert into ${TABLE_NAME} (
+      id,
+      display_name,
+      email,
+      role,
+      status,
+      created_by,
+      last_login,
+      last_password_reset,
+      updated_by,
+      raw_payload
+    )
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
+    on conflict (id)
+    do update set
+      display_name = excluded.display_name,
+      email = excluded.email,
+      role = excluded.role,
+      status = excluded.status,
+      last_login = excluded.last_login,
+      last_password_reset = excluded.last_password_reset,
+      updated_by = excluded.updated_by,
+      raw_payload = excluded.raw_payload
+    returning *
+    `,
+    [
+      input.id,
+      input.displayName,
+      input.email,
+      input.role,
+      input.status,
+      input.createdBy,
+      input.lastLogin ?? null,
+      input.lastPasswordReset ?? null,
+      input.updatedBy ?? input.createdBy,
+      JSON.stringify(input.rawPayload ?? {})
+    ]
+  )
+
+  return mapRow(result.rows[0])
+}
+
 const mapRow = (row: Record<string, unknown>): UserRecord => {
   return {
     id: String(row.id),

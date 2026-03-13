@@ -42,6 +42,52 @@ export interface UpdateEventInput {
   rawPayload?: Record<string, unknown>
 }
 
+export const upsertEvent = async (input: CreateEventInput): Promise<EventRecord> => {
+  const result = await postgresPool.query(
+    `
+    insert into ${TABLE_NAME} (
+      id,
+      address,
+      archived,
+      date_start,
+      date_end,
+      description,
+      link,
+      location,
+      title,
+      raw_payload
+    )
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
+    on conflict (id)
+    do update set
+      address = excluded.address,
+      archived = excluded.archived,
+      date_start = excluded.date_start,
+      date_end = excluded.date_end,
+      description = excluded.description,
+      link = excluded.link,
+      location = excluded.location,
+      title = excluded.title,
+      raw_payload = excluded.raw_payload
+    returning *
+    `,
+    [
+      input.id,
+      input.address,
+      input.archived ?? false,
+      input.dateStart ?? null,
+      input.dateEnd ?? null,
+      input.description,
+      input.link,
+      input.location,
+      input.title,
+      JSON.stringify(input.rawPayload ?? {})
+    ]
+  )
+
+  return mapRow(result.rows[0])
+}
+
 const mapRow = (row: Record<string, unknown>): EventRecord => {
   return {
     id: String(row.id),

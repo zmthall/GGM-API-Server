@@ -58,6 +58,71 @@ export interface UpdateContactMessageInput {
   rawPayload?: Record<string, unknown>
 }
 
+export const upsertContactMessage = async (
+  input: CreateContactMessageInput
+): Promise<ContactMessageRecord> => {
+  const result = await postgresPool.query(
+    `
+    insert into ${TABLE_NAME} (
+      id,
+      contact_method,
+      contact_type,
+      created_at,
+      email,
+      email_sent_at,
+      email_status,
+      first_name,
+      last_name,
+      message,
+      message_id,
+      phone,
+      reason,
+      status,
+      tags,
+      raw_payload
+    )
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb)
+    on conflict (id)
+    do update set
+      contact_method = excluded.contact_method,
+      contact_type = excluded.contact_type,
+      email = excluded.email,
+      email_sent_at = excluded.email_sent_at,
+      email_status = excluded.email_status,
+      first_name = excluded.first_name,
+      last_name = excluded.last_name,
+      message = excluded.message,
+      message_id = excluded.message_id,
+      phone = excluded.phone,
+      reason = excluded.reason,
+      status = excluded.status,
+      tags = excluded.tags,
+      raw_payload = excluded.raw_payload
+    returning *
+    `,
+    [
+      input.id,
+      input.contactMethod,
+      input.contactType,
+      input.createdAt ?? new Date(),
+      input.email,
+      input.emailSentAt ?? null,
+      input.emailStatus,
+      input.firstName,
+      input.lastName,
+      input.message,
+      input.messageId,
+      input.phone,
+      input.reason,
+      input.status,
+      input.tags ?? [],
+      JSON.stringify(input.rawPayload ?? {})
+    ]
+  )
+
+  return mapRow(result.rows[0])
+}
+
 const mapRow = (row: Record<string, unknown>): ContactMessageRecord => {
   return {
     id: String(row.id),
