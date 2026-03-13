@@ -9,7 +9,8 @@ export const NOTIFICATION_COUNTS_DOC = {
 export const NOTIFICATION_TYPE_BY_COLLECTION = {
   ride_requests: 'ride_requests',
   contact_messages: 'messages',
-  job_applications: 'applications'
+  job_applications: 'applications',
+  job_applications_import_test: 'applications'
 } as const
 
 export const COUNTS_FIELD_BY_TYPE: Record<
