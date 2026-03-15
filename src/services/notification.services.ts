@@ -85,8 +85,8 @@ export const decreaseNotificationCount = async (type: CorrespondenceType, amount
 
 export const syncNotificationCountOnStatusChange = async (
   type: CorrespondenceType,
-  prevStatus: CorrespondenceStatus | undefined,
-  nextStatus: CorrespondenceStatus | undefined
+  prevStatus: CorrespondenceStatus | string  | undefined,
+  nextStatus: CorrespondenceStatus | string | undefined
 ): Promise<void> => {
   const prev = normalizeStatus(prevStatus)
   const next = normalizeStatus(nextStatus)
