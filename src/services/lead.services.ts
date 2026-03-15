@@ -411,7 +411,7 @@ export const searchLeads = async (
         hasNextPage,
         hasPreviousPage,
         totalPages: Math.ceil(allResults.length / pageSize),
-        totalCount: allResults.length
+        totalItems: allResults.length
       }
     };
   } catch (error) {

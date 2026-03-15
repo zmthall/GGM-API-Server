@@ -1,337 +1,318 @@
-import { generateEmailVerification, generatePasswordReset, getDocument } from '../helpers/firebase';
-import * as userManagement from '../services/userManagement.services';
-import type { Request, Response } from 'express';
-import { Emailer } from '../helpers/email';
-import { UserProfile } from '../types/user';
+import { generateEmailVerification, generatePasswordReset } from '../helpers/firebase'
+import * as userManagement from '../services/userManagement.services'
+import type { Request, Response } from 'express'
+import { Emailer } from '../helpers/email'
 
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { email, password, displayName, role } = req.body;
-    const createdByUid = req.user?.uid;
+    const { email, password, displayName, role } = req.body
+    const createdByUid = req.user?.uid
 
     if (!createdByUid) {
       res.status(401).json({
         success: false,
         message: 'Unauthorized: Admin authentication required'
-      });
-      return;
+      })
+      return
     }
 
-    // Validate required fields
     if (!email || !password) {
       res.status(400).json({
         success: false,
         message: 'Email and password are required'
-      });
-      return;
+      })
+      return
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       res.status(400).json({
         success: false,
         message: 'Invalid email format'
-      });
-      return;
+      })
+      return
     }
 
-    // Validate password length
     if (password.length < 6) {
       res.status(400).json({
         success: false,
         message: 'Password must be at least 6 characters long'
-      });
-      return;
+      })
+      return
     }
 
-    // Validate role if provided
     if (role && !['admin', 'user', 'correspondence'].includes(role)) {
       res.status(400).json({
         success: false,
         message: 'Role must be either "admin", "user", or "correspondence"'
-      });
-      return;
+      })
+      return
     }
 
     const result = await userManagement.createUser(
       { email, password, displayName, role },
       createdByUid
-    );
-    
-    const verificationLink = await generateEmailVerification(result.email);
+    )
 
-    await Emailer.noreply.sendVerificationLinkEmail(result.email, verificationLink);
+    const verificationLink = await generateEmailVerification(result.email)
+    await Emailer.noreply.sendVerificationLinkEmail(result.email, verificationLink)
 
     res.status(201).json({
       success: true,
       message: 'User created successfully',
       data: result
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const { uid } = req.params;
-    const adminUid = req.user?.uid;
+    const { uid } = req.params
+    const adminUid = req.user?.uid
 
     if (!uid) {
       res.status(400).json({
         success: false,
         message: 'User UID is required'
-      });
-      return;
+      })
+      return
     }
 
-    // Prevent admin from deleting themselves
     if (uid === adminUid) {
       res.status(400).json({
         success: false,
         message: 'Cannot delete your own account'
-      });
-      return;
+      })
+      return
     }
 
-    // Check if user exists first
-    try {
-      await getDocument('users', uid);
-    } catch (error) {
+    const existingUser = await userManagement.getUserProfile(uid)
+    if (!existingUser) {
       res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-      return;
+      })
+      return
     }
 
-    await userManagement.deleteUser(uid);
+    await userManagement.deleteUser(uid)
 
     res.json({
       success: true,
       message: 'User deleted successfully'
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const disableUserToggle = async (req: Request, res: Response) => {
   try {
-    const { uid } = req.params;
-    const adminUid = req.user?.uid;
-    let disabled;
+    const { uid } = req.params
+    const adminUid = req.user?.uid
 
     if (!uid) {
       res.status(400).json({
         success: false,
         message: 'User UID is required'
-      });
-      return;
+      })
+      return
     }
 
-    if(!adminUid) {
+    if (!adminUid) {
       res.status(400).json({
         success: false,
         message: 'An admin logged in is required'
-      });
-      return;
+      })
+      return
     }
 
-    // Prevent admin from disabling themselves
     if (uid === adminUid) {
       res.status(400).json({
         success: false,
         message: 'Cannot disable your own account'
-      });
-      return;
+      })
+      return
     }
 
+    const user = await userManagement.getUserProfile(uid)
 
-    // Check if user exists first
-    try {
-      const user = await getDocument<{ id: string, status: 'active' | 'disabled' }>('users', uid);
-
-      disabled = user?.status === "active" ? true : false;
-    } catch (error) {
+    if (!user) {
       res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-      return;
+      })
+      return
     }
 
-    await userManagement.disableUserToggle(uid, disabled, adminUid);
+    const disabled = user.status === 'active'
+
+    await userManagement.disableUserToggle(uid, adminUid, disabled)
 
     res.json({
       success: true,
-      message: 'User disabled successfully'
-    });
+      message: disabled ? 'User disabled successfully' : 'User enabled successfully'
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const deleteCurrentUser = async (req: Request, res: Response) => {
   try {
-    const uid = req.user?.uid;
+    const uid = req.user?.uid
 
     if (!uid) {
       res.status(400).json({
         success: false,
         message: 'User is not logged in.'
-      });
-      return;
+      })
+      return
     }
 
-    // Check if user exists first
-    try {
-      await getDocument('users', uid);
-    } catch (error) {
+    const existingUser = await userManagement.getUserProfile(uid)
+    if (!existingUser) {
       res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-      return;
+      })
+      return
     }
 
-    await userManagement.deleteUser(uid);
+    await userManagement.deleteUser(uid)
 
     res.json({
       success: true,
       message: 'User deleted successfully'
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    // Read both page and limit/pageSize parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 5;
+    const page = Number.parseInt(req.query.page as string) || 1
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 5
 
-    const result = await userManagement.getAllUsers({ page, pageSize });
+    const result = await userManagement.getAllUsers({ page, pageSize })
 
     res.json({
       success: true,
       data: result.data,
       pagination: result.pagination
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const updateUserRole = async (req: Request, res: Response) => {
   try {
-    const { uid } = req.params;
-    const { role } = req.body;
+    const { uid } = req.params
+    const { role } = req.body
+    const requester = req.user?.uid
 
-    const requester = req.user?.uid;
-    if(!requester) {
+    if (!requester) {
       res.status(400).json({
         success: false,
         message: 'An admin logged in is required'
-      });
-      return;
+      })
+      return
     }
 
-    if(uid === requester) {
+    if (uid === requester) {
       res.status(400).json({
         success: false,
         message: 'You cannot change your own role.'
-      });
-      return;
+      })
+      return
     }
 
     if (!uid) {
       res.status(400).json({
         success: false,
         message: 'User UID is required'
-      });
-      return;
+      })
+      return
     }
 
     if (!role) {
       res.status(400).json({
         success: false,
         message: 'Role is required'
-      });
-      return;
+      })
+      return
     }
 
-    // Validate role
     if (!['admin', 'user', 'correspondence'].includes(role)) {
       res.status(400).json({
         success: false,
         message: 'Role must be either "admin", "user", or "correspondence"'
-      });
-      return;
+      })
+      return
     }
 
-    // Check if user exists
-    const existingUser = await getDocument('users', uid);
+    const existingUser = await userManagement.getUserProfile(uid)
     if (!existingUser) {
       res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-      return;
+      })
+      return
     }
 
-    const result = await userManagement.updateUserRole(uid, role, requester);
+    const result = await userManagement.updateUserRole(uid, role, requester)
 
     res.json({
       success: true,
       message: 'User role updated successfully',
       data: result
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const updateLastLogin = async (req: Request, res: Response) => {
   try {
-    const uid = req.user?.uid;
+    const uid = req.user?.uid
 
     if (!uid) {
       res.status(400).json({
         success: false,
         message: 'User is not logged in.'
-      });
-      return;
+      })
+      return
     }
 
-    // Check if user exists
-    const existingUser = await getDocument('users', uid);
+    const existingUser = await userManagement.getUserProfile(uid)
     if (!existingUser) {
       res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-      return;
+      })
+      return
     }
 
     const result = await userManagement.updateLastLogin(uid)
@@ -340,231 +321,237 @@ export const updateLastLogin = async (req: Request, res: Response) => {
       success: true,
       message: 'User login updated successfully',
       data: result
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
 }
 
 export const updateLastPasswordReset = async (req: Request, res: Response) => {
   try {
-    const uid = req.user?.uid;
+    const uid = req.user?.uid
 
     if (!uid) {
       res.status(400).json({
         success: false,
         message: 'User is not logged in.'
-      });
-      return;
+      })
+      return
     }
 
-    // Check if user exists
-    const existingUser = await getDocument('users', uid);
+    const existingUser = await userManagement.getUserProfile(uid)
     if (!existingUser) {
       res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-      return;
+      })
+      return
     }
 
     const result = await userManagement.updateLastPasswordReset(uid)
 
     res.json({
       success: true,
-      message: 'User login updated successfully',
+      message: 'Password reset timestamp updated successfully',
       data: result
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
 }
 
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const uid = req.user?.uid
-    
+
     if (!uid) {
       res.status(400).json({
         success: false,
         message: 'User is not logged in'
-      });
-      return;
+      })
+      return
     }
 
-    const userProfileData = await userManagement.getUserProfile(uid);
-    
+    const userProfileData = await userManagement.getUserProfile(uid)
+
     if (!userProfileData) {
       res.status(404).json({
         success: false,
-        message: 'Ride request not found'
-      });
-      return;
+        message: 'User profile not found'
+      })
+      return
     }
 
     res.json({
       success: true,
       data: userProfileData
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const updateDisplayName = async (req: Request, res: Response) => {
   try {
-    const uid = req.user?.uid;
-
-    const { displayName } = req.body;
+    const uid = req.user?.uid
+    const { displayName } = req.body
 
     if (!uid) {
       res.status(400).json({
         success: false,
         message: 'User is not logged in.'
-      });
-      return;
+      })
+      return
     }
 
-    // Validate displayName
+    if (!displayName || typeof displayName !== 'string') {
+      res.status(400).json({
+        success: false,
+        message: 'Display name is required.'
+      })
+      return
+    }
+
     if (displayName.length > 15) {
       res.status(400).json({
         success: false,
         message: 'Display name cannot be longer than 15 characters.'
-      });
-      return;
+      })
+      return
     }
 
-    // Check if user exists
-    const existingUser = await getDocument('users', uid);
+    const existingUser = await userManagement.getUserProfile(uid)
     if (!existingUser) {
       res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-      return;
+      })
+      return
     }
 
     const result = await userManagement.updateDisplayName(uid, displayName)
 
     res.json({
       success: true,
-      message: 'User login updated successfully',
+      message: 'Display name updated successfully',
       data: result
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
 }
 
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const email = req.user?.email;
+    const email = req.user?.email
 
     if (!email) {
       res.status(400).json({
         success: false,
         message: 'User is not logged in.'
-      });
-      return;
+      })
+      return
     }
 
-    const passwordResetLink = await generatePasswordReset(email);
-
-    const result = await Emailer.noreply.sendPasswordResetEmail(email, passwordResetLink);
+    const passwordResetLink = await generatePasswordReset(email)
+    const result = await Emailer.noreply.sendPasswordResetEmail(email, passwordResetLink)
 
     res.status(201).json({
       success: true,
       message: 'Password reset link sent successfully.',
       data: result
-    });
-
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
 }
 
 export const changePasswordByID = async (req: Request, res: Response) => {
   try {
-    const { uid } = req.params;
+    const { uid } = req.params
 
-    // Check if user exists
-    const user = await getDocument<UserProfile>('users', uid);
+    if (!uid) {
+      res.status(400).json({
+        success: false,
+        message: 'User UID is required'
+      })
+      return
+    }
+
+    const user = await userManagement.getUserProfile(uid)
     if (!user) {
       res.status(404).json({
         success: false,
         message: `User with UID[${uid}] not found.`
-      });
-      return;
+      })
+      return
     }
 
-    const passwordResetLink = await generatePasswordReset(user.email);
+    const passwordResetLink = await generatePasswordReset(user.email)
 
-    const updatePasswordReset = await userManagement.updateLastPasswordReset(uid);
-    if(!updatePasswordReset) {
+    const updatePasswordReset = await userManagement.updateLastPasswordReset(uid)
+    if (!updatePasswordReset) {
       res.status(404).json({
         success: false,
-        message: `Failed to update last password reset for UID[${uid}.]`
-      });
-      return;
+        message: `Failed to update last password reset for UID[${uid}].`
+      })
+      return
     }
 
-    const result = await Emailer.noreply.sendPasswordResetEmail(user.email, passwordResetLink);
+    const result = await Emailer.noreply.sendPasswordResetEmail(user.email, passwordResetLink)
 
     res.status(201).json({
       success: true,
       message: 'Password reset link sent successfully.',
       data: result
-    });
-
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
 }
 
 export const resendEmailVerification = async (req: Request, res: Response) => {
   try {
-    const email = req.user?.email;
+    const email = req.user?.email
 
     if (!email) {
       res.status(400).json({
         success: false,
         message: 'User is not logged in.'
-      });
-      return;
+      })
+      return
     }
 
-    const verificationLink = await generateEmailVerification(email);
-
-    const result = await Emailer.noreply.sendVerificationLinkEmail(email, verificationLink);
+    const verificationLink = await generateEmailVerification(email)
+    const result = await Emailer.noreply.sendVerificationLinkEmail(email, verificationLink)
 
     res.status(201).json({
       success: true,
       message: 'Email verification link sent successfully.',
       data: result
-    });
-
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
 }

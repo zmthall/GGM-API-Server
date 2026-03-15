@@ -170,7 +170,7 @@ export const getPaginatedDocuments = async <T>(
         hasNextPage,
         hasPreviousPage,
         totalPages: Math.ceil(sortedDocs.length / pageSize),
-        totalCount: sortedDocs.length
+        totalItems: sortedDocs.length
       }
     };
   } catch (error) {
@@ -260,7 +260,7 @@ export const getPaginatedDocumentsByDateRange = async <T>(
         hasNextPage,
         hasPreviousPage,
         totalPages: Math.ceil(allDocs.length / pageSize),
-        totalCount: allDocs.length
+        totalItems: allDocs.length
       }
     };
   } catch (error) {

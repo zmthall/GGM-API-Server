@@ -41,6 +41,69 @@ export interface UpdateUserInput {
   rawPayload?: Record<string, unknown>
 }
 
+const toSafeString = (value: unknown): string => {
+  return typeof value === 'string' ? value : ''
+}
+
+const toSafeDate = (value: unknown): Date => {
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed
+    }
+  }
+
+  return new Date(0)
+}
+
+const toSafeNullableDate = (value: unknown): Date | null => {
+  if (value == null) {
+    return null
+  }
+
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed
+    }
+  }
+
+  return null
+}
+
+const toSafeObject = (value: unknown): Record<string, unknown> => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+
+  return {}
+}
+
+const mapRow = (row: Record<string, unknown>): UserRecord => {
+  return {
+    id: toSafeString(row.id),
+    display_name: toSafeString(row.display_name),
+    email: toSafeString(row.email),
+    role: toSafeString(row.role),
+    status: toSafeString(row.status),
+    created_at: toSafeDate(row.created_at),
+    created_by: toSafeString(row.created_by),
+    last_login: toSafeNullableDate(row.last_login),
+    last_password_reset: toSafeNullableDate(row.last_password_reset),
+    updated_at: toSafeDate(row.updated_at),
+    updated_by: toSafeString(row.updated_by),
+    raw_payload: toSafeObject(row.raw_payload)
+  }
+}
+
 export const upsertUser = async (input: CreateUserInput): Promise<UserRecord> => {
   const result = await postgresPool.query(
     `
@@ -66,6 +129,7 @@ export const upsertUser = async (input: CreateUserInput): Promise<UserRecord> =>
       last_login = excluded.last_login,
       last_password_reset = excluded.last_password_reset,
       updated_by = excluded.updated_by,
+      updated_at = now(),
       raw_payload = excluded.raw_payload
     returning *
     `,
@@ -84,23 +148,6 @@ export const upsertUser = async (input: CreateUserInput): Promise<UserRecord> =>
   )
 
   return mapRow(result.rows[0])
-}
-
-const mapRow = (row: Record<string, unknown>): UserRecord => {
-  return {
-    id: String(row.id),
-    display_name: String(row.display_name ?? ''),
-    email: String(row.email ?? ''),
-    role: String(row.role ?? ''),
-    status: String(row.status ?? ''),
-    created_at: row.created_at as Date,
-    created_by: String(row.created_by ?? ''),
-    last_login: (row.last_login as Date | null) ?? null,
-    last_password_reset: (row.last_password_reset as Date | null) ?? null,
-    updated_at: row.updated_at as Date,
-    updated_by: String(row.updated_by ?? ''),
-    raw_payload: (row.raw_payload as Record<string, unknown>) ?? {}
-  }
 }
 
 export const getUserById = async (id: string): Promise<UserRecord | null> => {
@@ -135,7 +182,7 @@ export const listUsers = async (): Promise<UserRecord[]> => {
   const result = await postgresPool.query(
     `select *
     from ${TABLE_NAME}
-    order by display_name asc, email asc`
+    order by created_at desc, display_name asc, email asc`
   )
 
   return result.rows.map(mapRow)
@@ -155,7 +202,7 @@ export const createUser = async (input: CreateUserInput): Promise<UserRecord> =>
       updated_by,
       raw_payload
     )
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
     returning *`,
     [
       input.id,
@@ -167,7 +214,7 @@ export const createUser = async (input: CreateUserInput): Promise<UserRecord> =>
       input.lastLogin ?? null,
       input.lastPasswordReset ?? null,
       input.updatedBy ?? input.createdBy,
-      input.rawPayload ? JSON.stringify(input.rawPayload) : '{}'
+      JSON.stringify(input.rawPayload ?? {})
     ]
   )
 
@@ -188,7 +235,8 @@ export const updateUser = async (
       last_login = coalesce($6, last_login),
       last_password_reset = coalesce($7, last_password_reset),
       updated_by = coalesce($8, updated_by),
-      raw_payload = coalesce($9::jsonb, raw_payload)
+      raw_payload = coalesce($9::jsonb, raw_payload),
+      updated_at = now()
     where id = $1
     returning *`,
     [

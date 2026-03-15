@@ -8,7 +8,7 @@ export interface PaginationOptions {
 
 export interface PaginatedDocumentResult<T> {
   data: T[];
-  totalCount: number;
+  totalItems: number;
   // ... other existing properties
 }
 
@@ -18,7 +18,7 @@ export interface PaginationMeta {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
   totalPages?: number;
-  totalCount?: number;
+  totalItems?: number;
 }
 
 export interface PaginatedResult<T> {
