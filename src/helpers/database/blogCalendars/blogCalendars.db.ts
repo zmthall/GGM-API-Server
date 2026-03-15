@@ -26,6 +26,44 @@ export interface UpdateBlogCalendarInput {
   rawPayload?: Record<string, unknown>
 }
 
+const toSafeString = (value: unknown): string => {
+  return typeof value === 'string' ? value : ''
+}
+
+const toSafeDate = (value: unknown): Date => {
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed
+    }
+  }
+
+  return new Date(0)
+}
+
+const toSafeObject = (value: unknown): Record<string, unknown> => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+
+  return {}
+}
+
+const mapRow = (row: Record<string, unknown>): BlogCalendarRecord => {
+  return {
+    id: toSafeString(row.id),
+    calendar_key: toSafeString(row.calendar_key),
+    csv: toSafeString(row.csv),
+    created_at: toSafeDate(row.created_at),
+    updated_at: toSafeDate(row.updated_at),
+    raw_payload: toSafeObject(row.raw_payload)
+  }
+}
+
 export const upsertBlogCalendar = async (
   input: CreateBlogCalendarInput
 ): Promise<BlogCalendarRecord> => {
@@ -43,6 +81,7 @@ export const upsertBlogCalendar = async (
     do update set
       calendar_key = excluded.calendar_key,
       csv = excluded.csv,
+      updated_at = excluded.updated_at,
       raw_payload = excluded.raw_payload
     returning *`,
     [
@@ -56,17 +95,6 @@ export const upsertBlogCalendar = async (
   )
 
   return mapRow(result.rows[0])
-}
-
-const mapRow = (row: Record<string, unknown>): BlogCalendarRecord => {
-  return {
-    id: String(row.id),
-    calendar_key: String(row.calendar_key),
-    csv: String(row.csv ?? ''),
-    created_at: row.created_at as Date,
-    updated_at: row.updated_at as Date,
-    raw_payload: (row.raw_payload as Record<string, unknown>) ?? {}
-  }
 }
 
 export const getBlogCalendarById = async (id: string): Promise<BlogCalendarRecord | null> => {
@@ -101,7 +129,7 @@ export const listBlogCalendars = async (): Promise<BlogCalendarRecord[]> => {
   const result = await postgresPool.query(
     `select *
     from ${TABLE_NAME}
-    order by calendar_key desc`
+    order by updated_at desc`
   )
 
   return result.rows.map(mapRow)
@@ -119,7 +147,7 @@ export const createBlogCalendar = async (
       updated_at,
       raw_payload
     )
-    values ($1,$2,$3,$4,$5,$6)
+    values ($1,$2,$3,$4,$5,$6::jsonb)
     returning *`,
     [
       input.id,
@@ -127,7 +155,7 @@ export const createBlogCalendar = async (
       input.csv,
       input.createdAt ?? new Date(),
       input.updatedAt ?? new Date(),
-      input.rawPayload ? JSON.stringify(input.rawPayload) : '{}'
+      JSON.stringify(input.rawPayload ?? {})
     ]
   )
 
@@ -143,7 +171,8 @@ export const updateBlogCalendar = async (
     set
       calendar_key = coalesce($2, calendar_key),
       csv = coalesce($3, csv),
-      raw_payload = coalesce($4::jsonb, raw_payload)
+      raw_payload = coalesce($4::jsonb, raw_payload),
+      updated_at = now()
     where id = $1
     returning *`,
     [

@@ -1,8 +1,13 @@
-import { createDocument, deleteDocument, getPaginatedDocuments, updateDocument } from '../helpers/firebase'
+import { randomUUID } from 'node:crypto'
+import {
+  createBlogCalendar,
+  deleteBlogCalendar,
+  getBlogCalendarByKey,
+  updateBlogCalendar,
+  listBlogCalendars
+} from '../helpers/database/blogCalendars/blogCalendars.db'
 import type { BlogCalendar } from '../types/blogCalendar'
-import type { PaginationOptions } from '../types/pagination'
 
-const COLLECTION = 'blog-calendars'
 const KEY_REGEX = /^\d{4}-\d{2}$/
 const MAX_CSV_CHARS = 300_000
 
@@ -20,6 +25,35 @@ function validateCsv(csv: string) {
   return s
 }
 
+const toIsoString = (value: Date | string | number | null | undefined): string => {
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+
+  const parsed = new Date(value ?? '')
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString()
+  }
+
+  return new Date(0).toISOString()
+}
+
+const mapRecordToBlogCalendar = (record: {
+  id: string
+  calendar_key: string
+  csv: string
+  created_at: Date
+  updated_at: Date
+}): BlogCalendar => {
+  return {
+    id: record.id,
+    key: record.calendar_key,
+    csv: record.csv,
+    createdAt: toIsoString(record.created_at),
+    updatedAt: toIsoString(record.updated_at)
+  }
+}
+
 export type BlogCalendarListItem = {
   key: string
   createdAt: string
@@ -28,46 +62,22 @@ export type BlogCalendarListItem = {
 
 async function findCalendarByKey(key: string): Promise<BlogCalendar | null> {
   const k = validateKey(key)
+  const record = await getBlogCalendarByKey(k)
 
-  const options: PaginationOptions = {
-    page: 1,
-    pageSize: 1,
-    orderField: 'updatedAt',
-    orderDirection: 'desc'
-  }
+  if (!record) return null
 
-  const result = await getPaginatedDocuments<BlogCalendar>(
-    COLLECTION,
-    { key: k },
-    {},
-    options
-  )
-
-  return result.data?.[0] ?? null
+  return mapRecordToBlogCalendar(record)
 }
 
 export const listCalendars = async (): Promise<BlogCalendarListItem[]> => {
   try {
-    const result = await getPaginatedDocuments<BlogCalendar>(
-      COLLECTION,
-      {},
-      {},
-      {
-        page: 1,
-        pageSize: 500,
-        orderField: 'updatedAt',
-        orderDirection: 'desc'
-      }
-    )
+    const records = await listBlogCalendars()
 
-    const items: BlogCalendarListItem[] = (result.data ?? []).map((doc) => ({
-      key: doc.key,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt
+    return records.map((record) => ({
+      key: record.calendar_key,
+      createdAt: toIsoString(record.created_at),
+      updatedAt: toIsoString(record.updated_at)
     }))
-
-    items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    return items
   } catch (error) {
     throw new Error(`Failed to list calendars: ${(error as Error).message}`)
   }
@@ -85,35 +95,31 @@ export const upsertCalendar = async (key: string, csv: string): Promise<BlogCale
   try {
     const k = validateKey(key)
     const s = validateCsv(csv)
-    const nowIso = new Date().toISOString()
 
-    const existing = await findCalendarByKey(k)
+    const existing = await getBlogCalendarByKey(k)
 
     if (!existing) {
-      const created = await createDocument<Omit<BlogCalendar, 'id'>>(COLLECTION, {
-        key: k,
+      const created = await createBlogCalendar({
+        id: randomUUID(),
+        calendarKey: k,
         csv: s,
-        createdAt: nowIso,
-        updatedAt: nowIso
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        rawPayload: {}
       })
 
-      // matches your event pattern: { id, data }
-      return {
-        id: created.id,
-        ...(created.data as Omit<BlogCalendar, 'id'>)
-      }
+      return mapRecordToBlogCalendar(created)
     }
 
-    await updateDocument(COLLECTION, existing.id, {
-      csv: s,
-      updatedAt: nowIso
+    const updated = await updateBlogCalendar(existing.id, {
+      csv: s
     })
 
-    return {
-      ...existing,
-      csv: s,
-      updatedAt: nowIso
+    if (!updated) {
+      throw new Error('Failed to update calendar.')
     }
+
+    return mapRecordToBlogCalendar(updated)
   } catch (error) {
     throw new Error(`Failed to save calendar: ${(error as Error).message}`)
   }
@@ -123,11 +129,10 @@ export const deleteCalendar = async (key: string): Promise<boolean> => {
   try {
     const k = validateKey(key)
 
-    const existing = await findCalendarByKey(k)
+    const existing = await getBlogCalendarByKey(k)
     if (!existing) return false
 
-    await deleteDocument(COLLECTION, existing.id)
-    return true
+    return await deleteBlogCalendar(existing.id)
   } catch (error) {
     throw new Error(`Failed to delete calendar: ${(error as Error).message}`)
   }
