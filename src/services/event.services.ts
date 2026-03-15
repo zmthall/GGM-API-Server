@@ -1,197 +1,236 @@
-// /services/event.services.ts
-import { convertISOToMMDDYYYY } from '../helpers/dateFormat';
-import { validateEvent } from '../helpers/eventValidation';
-import { createDocument, deleteDocument, getDocument, getPaginatedDocuments, updateDocument } from '../helpers/firebase';
-import type { Event } from '../types/event';
-import type { PaginatedResult, PaginationOptions } from '../types/pagination'; 
+import { randomUUID } from 'node:crypto'
+import { convertISOToMMDDYYYY } from '../helpers/dateFormat'
+import { validateEvent } from '../helpers/eventValidation'
+import {
+  createEvent as createEventRecord,
+  deleteEvent as deleteEventRecord,
+  getEventById,
+  listActiveEvents,
+  listArchivedEvents,
+  updateEvent as updateEventRecord
+} from '../helpers/database/events/events.db'
+import type { Event } from '../types/event'
+import type { PaginatedResult, PaginationOptions } from '../types/pagination'
+
+const toIsoString = (value: Date | string | number | null | undefined): string | undefined => {
+  if (!value) return undefined
+
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+
+  const parsed = new Date(value)
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString()
+  }
+
+  return undefined
+}
+
+const mapRecordToEvent = (record: {
+  id: string
+  address: string
+  archived: boolean
+  date_start: Date | null
+  date_end: Date | null
+  description: string
+  link: string
+  location: string
+  title: string
+}): Event => {
+  return {
+    id: record.id,
+    address: record.address,
+    archived: record.archived,
+    date: toIsoString(record.date_start) ?? '',
+    dateTo: toIsoString(record.date_end),
+    description: record.description,
+    link: record.link,
+    location: record.location,
+    title: record.title
+  }
+}
+
+const paginateItems = <T>(items: T[], page: number, pageSize: number): PaginatedResult<T> => {
+  const currentPage = Math.max(1, Number(page) || 1)
+  const normalizedPageSize = Math.max(1, Number(pageSize) || 5)
+  const totalItems = items.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / normalizedPageSize))
+  const startIndex = (currentPage - 1) * normalizedPageSize
+  const data = items.slice(startIndex, startIndex + normalizedPageSize)
+
+  return {
+    data,
+    pagination: {
+      currentPage,
+      pageSize: normalizedPageSize,
+      totalItems,
+      totalPages,
+      hasNextPage: currentPage < totalPages,
+      hasPreviousPage: currentPage > 1
+    }
+  }
+}
 
 export const createEvent = async (data: Omit<Event, 'id'>): Promise<Event> => {
-  // Convert date to ISO format if it's not already
   const processedData = {
     ...data,
     archived: false
-  };
+  }
 
-  const validation = validateEvent(processedData);
+  const validation = validateEvent(processedData)
   if (!validation.isValid) {
-    throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
+    throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`)
   }
 
-  processedData.date = new Date(processedData.date).toISOString();
+  const dateStartIso = new Date(processedData.date).toISOString()
+  const dateEndIso = processedData.dateTo ? new Date(processedData.dateTo).toISOString() : null
 
-  if (processedData.dateTo) {
-    processedData.dateTo = new Date(processedData.dateTo).toISOString();
-  }
-  
   try {
-    const result = await createDocument('events', processedData);
-    
-    return {
-      id: result.id,
-      ...result.data
-    } as Event;
+    const created = await createEventRecord({
+      id: randomUUID(),
+      address: processedData.address,
+      archived: false,
+      dateStart: dateStartIso ? new Date(dateStartIso) : null,
+      dateEnd: dateEndIso ? new Date(dateEndIso) : null,
+      description: processedData.description,
+      link: processedData.link,
+      location: processedData.location,
+      title: processedData.title,
+      rawPayload: {}
+    })
+
+    return mapRecordToEvent(created)
   } catch (error) {
-    throw new Error(`Failed to create event: ${(error as Error).message}`);
+    throw new Error(`Failed to create event: ${(error as Error).message}`)
   }
-};
+}
 
 export const getAllEvents = async (options: PaginationOptions = {}): Promise<PaginatedResult<Event>> => {
   try {
-    const page = options.page || 1;
-    const pageSize = options.pageSize || 5;
-    
-    const result = await getPaginatedDocuments<Event>(
-      'events',
-      { archived: false },
-      {},
-      {
-        pageSize,
-        page,
-        orderField: 'date',
-        orderDirection: 'asc',
-        ...options
-      }
-    );
+    const page = options.page || 1
+    const pageSize = options.pageSize || 5
 
-    // Convert ISO dates back to MM/DD/YYYY for frontend display
-    const convertedData = result.data.map((event: Event) => ({
+    const records = await listActiveEvents()
+    const mapped = records.map(mapRecordToEvent)
+
+    const convertedData = mapped.map((event: Event) => ({
       ...event,
       date: convertISOToMMDDYYYY(event.date),
       dateTo: event.dateTo ? convertISOToMMDDYYYY(event.dateTo) : undefined
-    }));
+    }))
 
-    return {
-      data: convertedData,
-      pagination: result.pagination
-    };
+    return paginateItems(convertedData, page, pageSize)
   } catch (error) {
-    throw new Error(`Failed to get events: ${(error as Error).message}`);
+    throw new Error(`Failed to get events: ${(error as Error).message}`)
   }
-};
+}
 
-// Do the same for getArchivedEvents
 export const getArchivedEvents = async (options: PaginationOptions = {}): Promise<PaginatedResult<Event>> => {
   try {
-    const page = options.page || 1;
-    const pageSize = options.pageSize || 10;
-    
-    const result = await getPaginatedDocuments<Event>(
-      'events',
-      { archived: true },
-      {},
-      {
-        page,
-        pageSize,
-        orderField: 'date',
-        orderDirection: 'desc',
-        ...options
-      }
-    );
+    const page = options.page || 1
+    const pageSize = options.pageSize || 10
 
-    // Convert ISO dates back to MM/DD/YYYY for frontend display
-    const convertedData = result.data.map((event: Event) => ({
+    const records = await listArchivedEvents()
+    const mapped = records.map(mapRecordToEvent)
+
+    const convertedData = mapped.map((event: Event) => ({
       ...event,
       date: convertISOToMMDDYYYY(event.date),
       dateTo: event.dateTo ? convertISOToMMDDYYYY(event.dateTo) : undefined
-    }));
+    }))
 
-    return {
-      data: convertedData,
-      pagination: result.pagination
-    };
+    return paginateItems(convertedData, page, pageSize)
   } catch (error) {
-    throw new Error(`Failed to get archived events: ${(error as Error).message}`);
+    throw new Error(`Failed to get archived events: ${(error as Error).message}`)
   }
-};
+}
 
 export const getEvent = async (id: string): Promise<Event | null> => {
   try {
-    const event = await getDocument('events', id);
-    
+    const event = await getEventById(id)
+
     if (!event) {
-      return null;
+      return null
     }
-    
-    return event as Event;
+
+    return mapRecordToEvent(event)
   } catch (error) {
-    throw new Error(`Failed to get event: ${(error as Error).message}`);
+    throw new Error(`Failed to get event: ${(error as Error).message}`)
   }
-};
+}
 
 export const updateEvent = async (id: string, data: Partial<Omit<Event, 'id'>>): Promise<Event | null> => {
   try {
-    // First check if the event exists
-    const existingEvent = await getDocument('events', id);
-    
+    const existingEvent = await getEventById(id)
+
     if (!existingEvent) {
-      return null;
+      return null
     }
 
-    // Validate the update data (only validate provided fields) - BEFORE ISO conversion
-    const validation = validateEvent({ ...existingEvent, ...data });
+    const existingMapped = mapRecordToEvent(existingEvent)
+
+    const validation = validateEvent({ ...existingMapped, ...data })
     if (!validation.isValid) {
-      throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
+      throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`)
     }
 
-    // Convert dates to ISO format AFTER validation (same as createEvent)
-    const processedData = { ...data };
-    if (processedData.date) {
-      processedData.date = new Date(processedData.date).toISOString();
-    }
-    if (processedData.dateTo) {
-      processedData.dateTo = new Date(processedData.dateTo).toISOString();
+    const processedDateStart = data.date ? new Date(data.date).toISOString() : null
+    const processedDateEnd = data.dateTo ? new Date(data.dateTo).toISOString() : null
+
+    const updatedEvent = await updateEventRecord(id, {
+      address: data.address,
+      archived: data.archived,
+      dateStart: data.date ? new Date(processedDateStart as string) : undefined,
+      dateEnd: data.dateTo ? new Date(processedDateEnd as string) : undefined,
+      description: data.description,
+      link: data.link,
+      location: data.location,
+      title: data.title
+    })
+
+    if (!updatedEvent) {
+      return null
     }
 
-    // Update the document with processed data
-    await updateDocument('events', id, processedData);
-    
-    // Get the updated document to return the full event
-    const updatedEvent = await getDocument('events', id);
-    
-    return updatedEvent as Event;
+    return mapRecordToEvent(updatedEvent)
   } catch (error) {
-    throw new Error(`Failed to update event: ${(error as Error).message}`);
+    throw new Error(`Failed to update event: ${(error as Error).message}`)
   }
-};
+}
 
 export const deleteEvent = async (id: string): Promise<boolean> => {
   try {
-    // First check if the event exists
-    const existingEvent = await getDocument('events', id);
-    
+    const existingEvent = await getEventById(id)
+
     if (!existingEvent) {
-      return false;
+      return false
     }
 
-    // Permanently delete the document
-    await deleteDocument('events', id);
-    
-    return true;
+    return await deleteEventRecord(id)
   } catch (error) {
-    throw new Error(`Failed to delete event: ${(error as Error).message}`);
+    throw new Error(`Failed to delete event: ${(error as Error).message}`)
   }
-};
+}
 
 export const archiveEvent = async (id: string): Promise<Event | null> => {
   try {
-    // First check if the event exists
-    const existingEvent = await getDocument<{ id: string, archived: boolean }>('events', id);
-    
+    const existingEvent = await getEventById(id)
+
     if (!existingEvent) {
-      return null;
+      return null
     }
 
-    // Toggle the archived status
-    const newArchivedStatus = !existingEvent.archived;
-    
-    // Update the document
-    await updateDocument('events', id, { archived: newArchivedStatus });
-    
-    // Get the updated document to return
-    const updatedEvent = await getDocument('events', id);
-    
-    return updatedEvent as Event;
+    const updatedEvent = await updateEventRecord(id, {
+      archived: !existingEvent.archived
+    })
+
+    if (!updatedEvent) {
+      return null
+    }
+
+    return mapRecordToEvent(updatedEvent)
   } catch (error) {
-    throw new Error(`Failed to archive event: ${(error as Error).message}`);
+    throw new Error(`Failed to archive event: ${(error as Error).message}`)
   }
-};
+}

@@ -22,8 +22,8 @@ export const createEvent = async (req: Request, res: Response) => {
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
     // Read both page and limit/pageSize parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 5;
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 5;
 
     const result = await eventService.getAllEvents({ page, pageSize });
     
@@ -44,8 +44,8 @@ export const getAllEvents = async (req: Request, res: Response) => {
 export const getArchivedEvents = async (req: Request, res: Response) => {
   try {
     // Updated to match the same pattern as getAllEvents
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 10;
     
     const result = await eventService.getArchivedEvents({ page, pageSize });
     

@@ -9,6 +9,4 @@ export const verifyLogin = async (req: Request, res: Response) => {
     uid: req.user?.uid,
     email: req.user?.email
   });
-
-  return;
 }

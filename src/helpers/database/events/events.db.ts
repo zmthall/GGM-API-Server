@@ -42,6 +42,73 @@ export interface UpdateEventInput {
   rawPayload?: Record<string, unknown>
 }
 
+const toSafeString = (value: unknown): string => {
+  return typeof value === 'string' ? value : ''
+}
+
+const toSafeBoolean = (value: unknown): boolean => {
+  return typeof value === 'boolean' ? value : false
+}
+
+const toSafeDate = (value: unknown): Date => {
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed
+    }
+  }
+
+  return new Date(0)
+}
+
+const toSafeNullableDate = (value: unknown): Date | null => {
+  if (value == null) {
+    return null
+  }
+
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed
+    }
+  }
+
+  return null
+}
+
+const toSafeObject = (value: unknown): Record<string, unknown> => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+
+  return {}
+}
+
+const mapRow = (row: Record<string, unknown>): EventRecord => {
+  return {
+    id: toSafeString(row.id),
+    address: toSafeString(row.address),
+    archived: toSafeBoolean(row.archived),
+    date_start: toSafeNullableDate(row.date_start),
+    date_end: toSafeNullableDate(row.date_end),
+    description: toSafeString(row.description),
+    link: toSafeString(row.link),
+    location: toSafeString(row.location),
+    title: toSafeString(row.title),
+    created_at: toSafeDate(row.created_at),
+    updated_at: toSafeDate(row.updated_at),
+    raw_payload: toSafeObject(row.raw_payload)
+  }
+}
+
 export const upsertEvent = async (input: CreateEventInput): Promise<EventRecord> => {
   const result = await postgresPool.query(
     `
@@ -68,6 +135,7 @@ export const upsertEvent = async (input: CreateEventInput): Promise<EventRecord>
       link = excluded.link,
       location = excluded.location,
       title = excluded.title,
+      updated_at = now(),
       raw_payload = excluded.raw_payload
     returning *
     `,
@@ -86,23 +154,6 @@ export const upsertEvent = async (input: CreateEventInput): Promise<EventRecord>
   )
 
   return mapRow(result.rows[0])
-}
-
-const mapRow = (row: Record<string, unknown>): EventRecord => {
-  return {
-    id: String(row.id),
-    address: String(row.address ?? ''),
-    archived: Boolean(row.archived),
-    date_start: (row.date_start as Date | null) ?? null,
-    date_end: (row.date_end as Date | null) ?? null,
-    description: String(row.description ?? ''),
-    link: String(row.link ?? ''),
-    location: String(row.location ?? ''),
-    title: String(row.title ?? ''),
-    created_at: row.created_at as Date,
-    updated_at: row.updated_at as Date,
-    raw_payload: (row.raw_payload as Record<string, unknown>) ?? {}
-  }
 }
 
 export const getEventById = async (id: string): Promise<EventRecord | null> => {
@@ -140,6 +191,17 @@ export const listActiveEvents = async (): Promise<EventRecord[]> => {
   return result.rows.map(mapRow)
 }
 
+export const listArchivedEvents = async (): Promise<EventRecord[]> => {
+  const result = await postgresPool.query(
+    `select *
+    from ${TABLE_NAME}
+    where archived = true
+    order by date_start desc nulls last, title asc`
+  )
+
+  return result.rows.map(mapRow)
+}
+
 export const createEvent = async (input: CreateEventInput): Promise<EventRecord> => {
   const result = await postgresPool.query(
     `insert into ${TABLE_NAME} (
@@ -154,7 +216,7 @@ export const createEvent = async (input: CreateEventInput): Promise<EventRecord>
       title,
       raw_payload
     )
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
     returning *`,
     [
       input.id,
@@ -166,7 +228,7 @@ export const createEvent = async (input: CreateEventInput): Promise<EventRecord>
       input.link,
       input.location,
       input.title,
-      input.rawPayload ? JSON.stringify(input.rawPayload) : '{}'
+      JSON.stringify(input.rawPayload ?? {})
     ]
   )
 
@@ -188,7 +250,8 @@ export const updateEvent = async (
       link = coalesce($7, link),
       location = coalesce($8, location),
       title = coalesce($9, title),
-      raw_payload = coalesce($10::jsonb, raw_payload)
+      raw_payload = coalesce($10::jsonb, raw_payload),
+      updated_at = now()
     where id = $1
     returning *`,
     [
