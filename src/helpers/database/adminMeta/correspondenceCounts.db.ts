@@ -1,4 +1,5 @@
 import { postgresPool } from "../../../config/postgres"
+import { toSafeDate, toSafeString } from "../../safe"
 
 const TABLE_NAME = 'admin_correspondence_counts'
 const SINGLETON_ID = 'correspondence_counts'
@@ -78,12 +79,12 @@ export const upsertCorrespondenceCounts = async (
 
 const mapRowToCorrespondenceCountsRecord = (row: Record<string, unknown>): CorrespondenceCountsRecord => {
   return {
-    id: String(row.id),
+    id: toSafeString(row.id),
     applications_new: Number(row.applications_new ?? 0),
     messages_new: Number(row.messages_new ?? 0),
     ride_requests_new: Number(row.ride_requests_new ?? 0),
-    created_at: row.created_at as Date,
-    updated_at: row.updated_at as Date,
+    created_at: toSafeDate(row.created_at),
+    updated_at: toSafeDate(row.updated_at),
     raw_payload: (row.raw_payload as Record<string, unknown> | null) ?? {}
   }
 }

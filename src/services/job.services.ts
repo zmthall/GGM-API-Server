@@ -1,21 +1,21 @@
-// /services/job.services.ts
-import { getFirstDocumentByField } from "../helpers/firebase";
-import { JobDescription } from "../types/jobs";
+import { getJobDescriptionByField, type JobDescriptionField } from '../helpers/database/jobDescriptions/jobDescriptions.db'
+import { JobDescription } from '../types/jobs'
 
-export const getJobDescription = async (field: string, field_value: string) => {
-      try {
-        const jobDescription = await getFirstDocumentByField('job_descriptions', field, field_value);
-        
-        if (!jobDescription) {
-          return null;
-        }
-        
-        jobDescription.qualifications = jobDescription.qualifications.split('\n');
-        jobDescription.shifts = jobDescription.shifts.split('\n');
-        jobDescription.responsibilities = jobDescription.responsibilities.split('\n');
+export const getJobDescription = async (field: JobDescriptionField, field_value: string) => {
+  try {
+    const jobDescription = await getJobDescriptionByField(field, field_value)
 
-        return jobDescription as JobDescription;
-      } catch (error) {
-        throw new Error(`Failed to get job description: ${(error as Error).message}`);
-      }
+    if (!jobDescription) {
+      return null
+    }
+
+    return {
+      ...jobDescription,
+      qualifications: jobDescription.qualifications ? jobDescription.qualifications.split('\n') : [],
+      shifts: jobDescription.shifts ? jobDescription.shifts.split('\n') : [],
+      responsibilities: jobDescription.responsibilities ? jobDescription.responsibilities.split('\n') : []
+    } as JobDescription
+  } catch (error) {
+    throw new Error(`Failed to get job description: ${(error as Error).message}`)
+  }
 }

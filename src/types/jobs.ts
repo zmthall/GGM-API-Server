@@ -2,8 +2,8 @@ export type JobDescription = {
     id: string;
     description: string;
     qualifications: string | string[];
-    responsbilities: string | string[];
-    select: string;
+    responsibilities: string | string[];
+    select_label: string;
     shifts: string | string[];
     title: string;
 }

@@ -1,4 +1,5 @@
 import { postgresPool } from '../../../config/postgres'
+import { toSafeDate, toSafeObject, toSafeString } from '../../safe'
 
 const TABLE_NAME = 'job_descriptions'
 
@@ -36,6 +37,29 @@ export interface UpdateJobDescriptionInput {
   rawPayload?: Record<string, unknown>
 }
 
+export type JobDescriptionField = 'id' | 'title' | 'select_label'
+
+const FIELD_MAP: Record<JobDescriptionField, string> = {
+  id: 'id',
+  title: 'title',
+  select_label: 'select_label'
+}
+
+const mapRow = (row: Record<string, unknown>): JobDescriptionRecord => {
+  return {
+    id: toSafeString(row.id),
+    title: toSafeString(row.title),
+    description: toSafeString(row.description),
+    responsibilities: toSafeString(row.responsibilities),
+    qualifications: toSafeString(row.qualifications),
+    select_label: toSafeString(row.select_label),
+    shifts: toSafeString(row.shifts),
+    created_at: toSafeDate(row.created_at),
+    updated_at: toSafeDate(row.updated_at),
+    raw_payload: toSafeObject(row.raw_payload)
+  }
+}
+
 export const upsertJobDescription = async (
   input: CreateJobDescriptionInput
 ): Promise<JobDescriptionRecord> => {
@@ -59,6 +83,7 @@ export const upsertJobDescription = async (
       qualifications = excluded.qualifications,
       select_label = excluded.select_label,
       shifts = excluded.shifts,
+      updated_at = now(),
       raw_payload = excluded.raw_payload
     returning *`,
     [
@@ -76,21 +101,6 @@ export const upsertJobDescription = async (
   return mapRow(result.rows[0])
 }
 
-const mapRow = (row: Record<string, unknown>): JobDescriptionRecord => {
-  return {
-    id: String(row.id),
-    title: String(row.title),
-    description: String(row.description ?? ''),
-    responsibilities: String(row.responsibilities ?? ''),
-    qualifications: String(row.qualifications ?? ''),
-    select_label: String(row.select_label ?? ''),
-    shifts: String(row.shifts ?? ''),
-    created_at: row.created_at as Date,
-    updated_at: row.updated_at as Date,
-    raw_payload: (row.raw_payload as Record<string, unknown>) ?? {}
-  }
-}
-
 export const getJobDescriptionById = async (
   id: string
 ): Promise<JobDescriptionRecord | null> => {
@@ -102,6 +112,27 @@ export const getJobDescriptionById = async (
     limit 1
     `,
     [id]
+  )
+
+  if (!result.rows.length) return null
+
+  return mapRow(result.rows[0])
+}
+
+export const getJobDescriptionByField = async (
+  field: JobDescriptionField,
+  value: string
+): Promise<JobDescriptionRecord | null> => {
+  const column = FIELD_MAP[field]
+
+  const result = await postgresPool.query(
+    `
+    select *
+    from ${TABLE_NAME}
+    where ${column} = $1
+    limit 1
+    `,
+    [value]
   )
 
   if (!result.rows.length) return null
@@ -136,7 +167,7 @@ export const createJobDescription = async (
       shifts,
       raw_payload
     )
-    values ($1,$2,$3,$4,$5,$6,$7,$8)
+    values ($1,$2,$3,$4,$5,$6,$7,$8::jsonb)
     returning *
     `,
     [
@@ -147,7 +178,7 @@ export const createJobDescription = async (
       input.qualifications,
       input.selectLabel,
       input.shifts,
-      input.rawPayload ? JSON.stringify(input.rawPayload) : '{}'
+      JSON.stringify(input.rawPayload ?? {})
     ]
   )
 
@@ -168,7 +199,8 @@ export const updateJobDescription = async (
       qualifications = coalesce($5, qualifications),
       select_label = coalesce($6, select_label),
       shifts = coalesce($7, shifts),
-      raw_payload = coalesce($8::jsonb, raw_payload)
+      raw_payload = coalesce($8::jsonb, raw_payload),
+      updated_at = now()
     where id = $1
     returning *
     `,
