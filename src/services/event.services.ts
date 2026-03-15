@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { v4 as uuidv4 } from 'uuid';
 import { convertISOToMMDDYYYY } from '../helpers/dateFormat'
 import { validateEvent } from '../helpers/eventValidation'
 import {
@@ -42,8 +42,8 @@ const mapRecordToEvent = (record: {
     id: record.id,
     address: record.address,
     archived: record.archived,
-    date: toIsoString(record.date_start) ?? '',
-    dateTo: toIsoString(record.date_end),
+    dateStart: toIsoString(record.date_start) ?? '',
+    dateEnd: toIsoString(record.date_end),
     description: record.description,
     link: record.link,
     location: record.location,
@@ -83,12 +83,12 @@ export const createEvent = async (data: Omit<Event, 'id'>): Promise<Event> => {
     throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`)
   }
 
-  const dateStartIso = new Date(processedData.date).toISOString()
-  const dateEndIso = processedData.dateTo ? new Date(processedData.dateTo).toISOString() : null
+  const dateStartIso = new Date(processedData.dateStart).toISOString()
+  const dateEndIso = processedData.dateEnd ? new Date(processedData.dateEnd).toISOString() : null
 
   try {
     const created = await createEventRecord({
-      id: randomUUID(),
+      id: uuidv4(),
       address: processedData.address,
       archived: false,
       dateStart: dateStartIso ? new Date(dateStartIso) : null,
@@ -116,8 +116,8 @@ export const getAllEvents = async (options: PaginationOptions = {}): Promise<Pag
 
     const convertedData = mapped.map((event: Event) => ({
       ...event,
-      date: convertISOToMMDDYYYY(event.date),
-      dateTo: event.dateTo ? convertISOToMMDDYYYY(event.dateTo) : undefined
+      dateStart: convertISOToMMDDYYYY(event.dateStart),
+      dateEnd: event.dateEnd ? convertISOToMMDDYYYY(event.dateEnd) : undefined
     }))
 
     return paginateItems(convertedData, page, pageSize)
@@ -136,8 +136,8 @@ export const getArchivedEvents = async (options: PaginationOptions = {}): Promis
 
     const convertedData = mapped.map((event: Event) => ({
       ...event,
-      date: convertISOToMMDDYYYY(event.date),
-      dateTo: event.dateTo ? convertISOToMMDDYYYY(event.dateTo) : undefined
+      dateStart: convertISOToMMDDYYYY(event.dateStart),
+      dateEnd: event.dateEnd ? convertISOToMMDDYYYY(event.dateEnd) : undefined
     }))
 
     return paginateItems(convertedData, page, pageSize)
@@ -175,14 +175,14 @@ export const updateEvent = async (id: string, data: Partial<Omit<Event, 'id'>>):
       throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`)
     }
 
-    const processedDateStart = data.date ? new Date(data.date).toISOString() : null
-    const processedDateEnd = data.dateTo ? new Date(data.dateTo).toISOString() : null
+    const processedDateStart = data.dateStart ? new Date(data.dateStart).toISOString() : null
+    const processedDateEnd = data.dateEnd ? new Date(data.dateEnd).toISOString() : null
 
     const updatedEvent = await updateEventRecord(id, {
       address: data.address,
       archived: data.archived,
-      dateStart: data.date ? new Date(processedDateStart as string) : undefined,
-      dateEnd: data.dateTo ? new Date(processedDateEnd as string) : undefined,
+      dateStart: data.dateStart ? new Date(processedDateStart as string) : undefined,
+      dateEnd: data.dateEnd ? new Date(processedDateEnd as string) : undefined,
       description: data.description,
       link: data.link,
       location: data.location,

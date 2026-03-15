@@ -1,10 +1,8 @@
 // types/event.ts
-import * as admin from 'firebase-admin';
-
 export type Event = {
     id: string;
-    date: string;
-    dateTo?: string;
+    dateStart: string;
+    dateEnd?: string;
     title: string;
     location: string;
     address: string;

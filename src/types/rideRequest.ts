@@ -9,6 +9,7 @@ export interface RideRequestData {
   pickup_address: string;
   dropoff_address: string;
   notes: string;
+  acknowledge?: boolean;
 }
 
 export interface RideRequestDocument extends RideRequestData {
@@ -22,6 +23,7 @@ export interface RideRequestDocument extends RideRequestData {
   message_id?: string;
   email_error?: string;
   email_failed_at?: string;
+  updated_at: string;
 }
 
 export type RideRequestStatus =

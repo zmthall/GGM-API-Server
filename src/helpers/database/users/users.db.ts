@@ -1,4 +1,5 @@
 import { postgresPool } from '../../../config/postgres'
+import { toSafeDate, toSafeNullableDate, toSafeObject, toSafeString } from '../../safe'
 
 const TABLE_NAME = 'users'
 
@@ -39,52 +40,6 @@ export interface UpdateUserInput {
   lastPasswordReset?: Date | null
   updatedBy?: string
   rawPayload?: Record<string, unknown>
-}
-
-const toSafeString = (value: unknown): string => {
-  return typeof value === 'string' ? value : ''
-}
-
-const toSafeDate = (value: unknown): Date => {
-  if (value instanceof Date) {
-    return value
-  }
-
-  if (typeof value === 'string' || typeof value === 'number') {
-    const parsed = new Date(value)
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed
-    }
-  }
-
-  return new Date(0)
-}
-
-const toSafeNullableDate = (value: unknown): Date | null => {
-  if (value == null) {
-    return null
-  }
-
-  if (value instanceof Date) {
-    return value
-  }
-
-  if (typeof value === 'string' || typeof value === 'number') {
-    const parsed = new Date(value)
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed
-    }
-  }
-
-  return null
-}
-
-const toSafeObject = (value: unknown): Record<string, unknown> => {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>
-  }
-
-  return {}
 }
 
 const mapRow = (row: Record<string, unknown>): UserRecord => {

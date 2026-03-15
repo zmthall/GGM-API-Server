@@ -1,4 +1,5 @@
 import { postgresPool } from '../../../config/postgres'
+import { toSafeBoolean, toSafeDate, toSafeNullableDate, toSafeObject, toSafeString, toSafeStringArray } from '../../safe'
 
 const TABLE_NAME = 'ride_requests'
 
@@ -70,6 +71,32 @@ export interface UpdateRideRequestInput {
   rawPayload?: Record<string, unknown>
 }
 
+const mapRow = (row: Record<string, unknown>): RideRequestRecord => {
+  return {
+    id: toSafeString(row.id),
+    acknowledge: toSafeBoolean(row.acknowledge),
+    apt_date: row.apt_date ? toSafeString(row.apt_date) : null,
+    apt_time: toSafeNullableDate(row.apt_time),
+    contact_type: toSafeString(row.contact_type),
+    created_at: toSafeDate(row.created_at),
+    dob: toSafeString(row.dob),
+    dropoff_address: toSafeString(row.dropoff_address),
+    email: toSafeString(row.email),
+    email_sent_at: toSafeNullableDate(row.email_sent_at),
+    email_status: toSafeString(row.email_status),
+    med_id: toSafeString(row.med_id),
+    message_id: toSafeString(row.message_id),
+    name: toSafeString(row.name),
+    notes: toSafeString(row.notes),
+    phone: toSafeString(row.phone),
+    pickup_address: toSafeString(row.pickup_address),
+    status: toSafeString(row.status),
+    tags: toSafeStringArray(row.tags),
+    updated_at: toSafeDate(row.updated_at),
+    raw_payload: toSafeObject(row.raw_payload)
+  }
+}
+
 export const upsertRideRequest = async (
   input: CreateRideRequestInput
 ): Promise<RideRequestRecord> => {
@@ -117,6 +144,7 @@ export const upsertRideRequest = async (
       pickup_address = excluded.pickup_address,
       status = excluded.status,
       tags = excluded.tags,
+      updated_at = now(),
       raw_payload = excluded.raw_payload
     returning *
     `,
@@ -147,32 +175,6 @@ export const upsertRideRequest = async (
   return mapRow(result.rows[0])
 }
 
-const mapRow = (row: Record<string, unknown>): RideRequestRecord => {
-  return {
-    id: String(row.id),
-    acknowledge: Boolean(row.acknowledge),
-    apt_date: row.apt_date ? String(row.apt_date) : null,
-    apt_time: (row.apt_time as Date | null) ?? null,
-    contact_type: String(row.contact_type ?? ''),
-    created_at: row.created_at as Date,
-    dob: String(row.dob ?? ''),
-    dropoff_address: String(row.dropoff_address ?? ''),
-    email: String(row.email ?? ''),
-    email_sent_at: (row.email_sent_at as Date | null) ?? null,
-    email_status: String(row.email_status ?? ''),
-    med_id: String(row.med_id ?? ''),
-    message_id: String(row.message_id ?? ''),
-    name: String(row.name ?? ''),
-    notes: String(row.notes ?? ''),
-    phone: String(row.phone ?? ''),
-    pickup_address: String(row.pickup_address ?? ''),
-    status: String(row.status ?? ''),
-    tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-    updated_at: row.updated_at as Date,
-    raw_payload: (row.raw_payload as Record<string, unknown>) ?? {}
-  }
-}
-
 export const getRideRequestById = async (id: string): Promise<RideRequestRecord | null> => {
   const result = await postgresPool.query(
     `select *
@@ -191,7 +193,9 @@ export const listRideRequests = async (): Promise<RideRequestRecord[]> => {
   const result = await postgresPool.query(
     `select *
     from ${TABLE_NAME}
-    order by created_at desc`
+    order by
+      case when lower(status) = 'new' then 0 else 1 end,
+      created_at desc`
   )
 
   return result.rows.map(mapRow)
@@ -235,7 +239,7 @@ export const createRideRequest = async (
       tags,
       raw_payload
     )
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb)
     returning *`,
     [
       input.id,
@@ -257,7 +261,7 @@ export const createRideRequest = async (
       input.pickupAddress,
       input.status,
       input.tags ?? [],
-      input.rawPayload ? JSON.stringify(input.rawPayload) : '{}'
+      JSON.stringify(input.rawPayload ?? {})
     ]
   )
 
@@ -288,7 +292,8 @@ export const updateRideRequest = async (
       pickup_address = coalesce($16, pickup_address),
       status = coalesce($17, status),
       tags = coalesce($18, tags),
-      raw_payload = coalesce($19::jsonb, raw_payload)
+      raw_payload = coalesce($19::jsonb, raw_payload),
+      updated_at = now()
     where id = $1
     returning *`,
     [

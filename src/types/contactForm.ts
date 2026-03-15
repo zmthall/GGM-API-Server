@@ -19,6 +19,7 @@ export interface ContactFormDocument extends ContactFormData {
   message_id?: string;
   email_error?: string;
   email_failed_at?: string;
+  updated_at: string;
 }
 
 export type ContactFormStatus =

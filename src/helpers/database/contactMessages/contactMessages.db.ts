@@ -1,4 +1,5 @@
 import { postgresPool } from '../../../config/postgres'
+import { toSafeDate, toSafeNullableDate, toSafeObject, toSafeString, toSafeStringArray } from '../../safe'
 
 const TABLE_NAME = 'contact_messages'
 
@@ -58,6 +59,28 @@ export interface UpdateContactMessageInput {
   rawPayload?: Record<string, unknown>
 }
 
+const mapRow = (row: Record<string, unknown>): ContactMessageRecord => {
+  return {
+    id: toSafeString(row.id),
+    contact_method: toSafeString(row.contact_method),
+    contact_type: toSafeString(row.contact_type),
+    created_at: toSafeDate(row.created_at),
+    email: toSafeString(row.email),
+    email_sent_at: toSafeNullableDate(row.email_sent_at),
+    email_status: toSafeString(row.email_status),
+    first_name: toSafeString(row.first_name),
+    last_name: toSafeString(row.last_name),
+    message: toSafeString(row.message),
+    message_id: toSafeString(row.message_id),
+    phone: toSafeString(row.phone),
+    reason: toSafeString(row.reason),
+    status: toSafeString(row.status),
+    tags: toSafeStringArray(row.tags),
+    updated_at: toSafeDate(row.updated_at),
+    raw_payload: toSafeObject(row.raw_payload)
+  }
+}
+
 export const upsertContactMessage = async (
   input: CreateContactMessageInput
 ): Promise<ContactMessageRecord> => {
@@ -97,6 +120,7 @@ export const upsertContactMessage = async (
       reason = excluded.reason,
       status = excluded.status,
       tags = excluded.tags,
+      updated_at = now(),
       raw_payload = excluded.raw_payload
     returning *
     `,
@@ -123,28 +147,6 @@ export const upsertContactMessage = async (
   return mapRow(result.rows[0])
 }
 
-const mapRow = (row: Record<string, unknown>): ContactMessageRecord => {
-  return {
-    id: String(row.id),
-    contact_method: String(row.contact_method ?? ''),
-    contact_type: String(row.contact_type ?? ''),
-    created_at: row.created_at as Date,
-    email: String(row.email ?? ''),
-    email_sent_at: (row.email_sent_at as Date | null) ?? null,
-    email_status: String(row.email_status ?? ''),
-    first_name: String(row.first_name ?? ''),
-    last_name: String(row.last_name ?? ''),
-    message: String(row.message ?? ''),
-    message_id: String(row.message_id ?? ''),
-    phone: String(row.phone ?? ''),
-    reason: String(row.reason ?? ''),
-    status: String(row.status ?? ''),
-    tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-    updated_at: row.updated_at as Date,
-    raw_payload: (row.raw_payload as Record<string, unknown>) ?? {}
-  }
-}
-
 export const getContactMessageById = async (
   id: string
 ): Promise<ContactMessageRecord | null> => {
@@ -165,7 +167,9 @@ export const listContactMessages = async (): Promise<ContactMessageRecord[]> => 
   const result = await postgresPool.query(
     `select *
     from ${TABLE_NAME}
-    order by created_at desc`
+    order by
+      case when lower(status) = 'new' then 0 else 1 end,
+      created_at desc`
   )
 
   return result.rows.map(mapRow)
@@ -193,7 +197,7 @@ export const createContactMessage = async (
       tags,
       raw_payload
     )
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb)
     returning *`,
     [
       input.id,
@@ -211,7 +215,7 @@ export const createContactMessage = async (
       input.reason,
       input.status,
       input.tags ?? [],
-      input.rawPayload ? JSON.stringify(input.rawPayload) : '{}'
+      JSON.stringify(input.rawPayload ?? {})
     ]
   )
 
@@ -238,7 +242,8 @@ export const updateContactMessage = async (
       reason = coalesce($12, reason),
       status = coalesce($13, status),
       tags = coalesce($14, tags),
-      raw_payload = coalesce($15::jsonb, raw_payload)
+      raw_payload = coalesce($15::jsonb, raw_payload),
+      updated_at = now()
     where id = $1
     returning *`,
     [

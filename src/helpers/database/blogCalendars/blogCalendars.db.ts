@@ -1,4 +1,5 @@
 import { postgresPool } from '../../../config/postgres'
+import { toSafeDate, toSafeObject, toSafeString } from '../../safe'
 
 const TABLE_NAME = 'blog_calendars'
 
@@ -24,33 +25,6 @@ export interface UpdateBlogCalendarInput {
   calendarKey?: string
   csv?: string
   rawPayload?: Record<string, unknown>
-}
-
-const toSafeString = (value: unknown): string => {
-  return typeof value === 'string' ? value : ''
-}
-
-const toSafeDate = (value: unknown): Date => {
-  if (value instanceof Date) {
-    return value
-  }
-
-  if (typeof value === 'string' || typeof value === 'number') {
-    const parsed = new Date(value)
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed
-    }
-  }
-
-  return new Date(0)
-}
-
-const toSafeObject = (value: unknown): Record<string, unknown> => {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>
-  }
-
-  return {}
 }
 
 const mapRow = (row: Record<string, unknown>): BlogCalendarRecord => {

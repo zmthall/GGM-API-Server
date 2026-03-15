@@ -1,425 +1,287 @@
-// /controllers/contactForm.controller.ts
-import * as contactForm from '../services/contactForm.services';
-import type { NextFunction, Request, Response } from 'express';
-import contentDisposition from 'content-disposition';
-
-// tiny helper to keep filenames header-safe
-const safe = (s: string) =>
-  (s ?? '')
-    .normalize('NFKC')
-    .replace(/[\\/:*?"<>|\r\n\s]/g, '_') // includes spaces now
-    .trim()
-    .slice(0, 120);
+import { toSafeString } from '../helpers/safe'
+import * as contactForm from '../services/contactForm.services'
+import type { Request, Response } from 'express'
 
 export const submitContactForm = async (req: Request, res: Response) => {
   try {
-    const contactData = req.body;
-    
-    // Validate required fields
-    const requiredFields = ['first_name', 'email', 'reason', 'contact_method', 'message'];
-    const missingFields = requiredFields.filter(field => !contactData[field]);
-    
+    const contactData = req.body
+
+    const requiredFields = ['first_name', 'email', 'reason', 'contact_method', 'message']
+    const missingFields = requiredFields.filter(field => !contactData[field])
+
     if (missingFields.length > 0) {
       res.status(400).json({
         success: false,
         message: `Missing required fields: ${missingFields.join(', ')}`
-      });
-      return;
+      })
+      return
     }
 
-    const results = await contactForm.submitContactForm(contactData);
+    const results = await contactForm.submitContactForm(contactData)
 
-    // Return response based on form submission results
-    if (results.success) {
-      res.status(200).json({
-        success: true,
-        message: 'Contact form submitted successfully',
-        messageId: results.messageId,
-        contactId: results.documentId
-      });
-      res.status(400).json({
-        success: false,
-        message: results.emailError || 'Failed to send contact form email',
-        contactId: results.documentId
-      });
-    }
+    res.status(200).json({
+      success: true,
+      message: results.emailSuccess
+        ? 'Contact form submitted successfully'
+        : 'Contact form saved, but email failed to send',
+      emailSuccess: results.emailSuccess,
+      messageId: results.messageId,
+      emailError: results.emailError,
+      contactId: results.documentId
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
       error: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const getAllContactForms = async (req: Request, res: Response) => {
   try {
-    // Read both page and limit/pageSize parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 5;
+    const omit = req.query.omit !== 'false'
+    const page = Number.parseInt(req.query.page as string) || 1
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 5
 
-    // Extract filters from query parameters
-    const filters: Record<string, any> = {};
-    if (req.query.status) filters.status = req.query.status;
-    if (req.query.email_status) filters.email_status = req.query.email_status;
-    if (req.query.reason) filters.reason = req.query.reason;
-    if (req.query.contact_method) filters.contact_method = req.query.contact_method;
-    // Add more filters as needed
+    const filters = {
+      ...(req.query.status ? { status: req.query.status as string } : {}),
+      ...(req.query.reason ? { reason: req.query.reason as string } : {})
+    }
 
-    const omit = req.query.omit === undefined ? undefined : req.query.omit === "true";
+    const result = await contactForm.getAllContactForms(filters, omit, { page, pageSize })
 
-    const result = await contactForm.getAllContactForms(filters, omit, { page, pageSize });
-    
-    // Return the format your frontend expects
     res.json({
       success: true,
       data: result.data,
       pagination: result.pagination
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const getContactFormById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    
-    if (!id) {
-      res.status(400).json({
-        success: false,
-        message: 'Contact form ID is required'
-      });
-      return;
-    }
-
-    const contactFormData = await contactForm.getContactFormById(id);
-    
-    if (!contactFormData) {
-      res.status(404).json({
-        success: false,
-        message: 'Contact form not found'
-      });
-      return;
-    }
+    const { id } = req.params
+    const result = await contactForm.getContactFormById(id)
 
     res.json({
       success: true,
-      data: contactFormData
-    });
+      data: result
+    })
   } catch (error) {
-    res.status(500).json({
+    const message = (error as Error).message
+    res.status(message.includes('not found') ? 404 : 500).json({
       success: false,
-      message: (error as Error).message
-    });
+      message
+    })
   }
-};
+}
 
 export const getContactFormsByDate = async (req: Request, res: Response) => {
   try {
-    const { date } = req.params;
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
-    
-    if (!date) {
-      res.status(400).json({
-        success: false,
-        message: 'Date parameter is required'
-      });
-      return;
+    const { date } = req.params
+    const page = Number.parseInt(req.query.page as string) || 1
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 5
+
+    const filters = {
+      ...(req.query.status ? { status: req.query.status as string } : {}),
+      ...(req.query.reason ? { reason: req.query.reason as string } : {})
     }
 
-    // Validate MM-DD-YYYY format
-    const dateRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])-\d{4}$/;
-    if (!dateRegex.test(date)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid date format. Use MM-DD-YYYY'
-      });
-      return;
-    }
+    const result = await contactForm.getContactFormsByDate(date, filters, { page, pageSize })
 
-    // Extract additional filters from query parameters
-    const filters: Record<string, any> = {};
-    if (req.query.status) filters.status = req.query.status;
-    if (req.query.email_status) filters.email_status = req.query.email_status;
-    if (req.query.reason) filters.reason = req.query.reason;
-    if (req.query.contact_method) filters.contact_method = req.query.contact_method;
-
-    const result = await contactForm.getContactFormsByDate(date, filters, { page, pageSize });
-    
     res.json({
       success: true,
       data: result.data,
-      pagination: result.pagination,
-      date: date // Return the original MM-DD-YYYY format
-    });
+      pagination: result.pagination
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const getContactFormsByDateRange = async (req: Request, res: Response) => {
   try {
-    const { startDate, endDate } = req.params;
-    
-    // Read pagination parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const { startDate, endDate } = req.query
+    const page = Number.parseInt(req.query.page as string) || 1
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 5
+
+    if (!startDate || !endDate) {
+      res.status(400).json({
+        success: false,
+        message: 'startDate and endDate are required'
+      })
+      return
+    }
+
+    const filters = {
+      ...(req.query.status ? { status: req.query.status as string } : {}),
+      ...(req.query.reason ? { reason: req.query.reason as string } : {})
+    }
 
     const result = await contactForm.getContactFormsByDateRange(
-      { startDate, endDate }, 
-      {}, 
+      { startDate: toSafeString(startDate), endDate: toSafeString(endDate) },
+      filters,
       { page, pageSize }
-    );
-    
+    )
+
     res.json({
       success: true,
       data: result.data,
       pagination: result.pagination
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const getContactFormsByStatus = async (req: Request, res: Response) => {
   try {
-    const { status } = req.params;
-    
-    // Read pagination parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const { status } = req.params
+    const page = Number.parseInt(req.query.page as string) || 1
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 5
 
-    const result = await contactForm.getContactFormsByStatus(
-      { status: status }, 
-      { page, pageSize }
-    );
-    
+    const result = await contactForm.getContactFormsByStatus({ status }, { page, pageSize })
+
     res.json({
       success: true,
       data: result.data,
       pagination: result.pagination
-    });
+    })
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
 
 export const updateContactFormStatus = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    if (!id) {
-      res.status(400).json({
-        success: false,
-        message: 'Contact form ID is required'
-      });
-      return;
-    }
+    const { id } = req.params
+    const { status } = req.body
 
     if (!status) {
       res.status(400).json({
         success: false,
         message: 'Status is required'
-      });
-      return;
+      })
+      return
     }
 
-    // Validate status values
-    const validStatuses = ['new', 'reviewing', 'contacted', 'spam', 'closed'];
-    if (!validStatuses.includes(status)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
-      });
-      return;
-    }
+    const result = await contactForm.updateContactFormStatus(id, status)
 
-    const result = await contactForm.updateContactFormStatus(id, status);
-    
     res.json({
       success: true,
-      message: 'Contact form status updated successfully',
-      data: result
-    });
+      data: result,
+      message: 'Contact form status updated successfully'
+    })
   } catch (error) {
-    res.status(500).json({
+    const message = (error as Error).message
+    res.status(message.includes('not found') ? 404 : 500).json({
       success: false,
-      message: (error as Error).message
-    });
+      message
+    })
   }
-};
+}
 
 export const updateContactFormTags = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { tags } = req.body;
+    const { id } = req.params
+    const { tags } = req.body
 
-    
-    if (!id) {
+    if (!Array.isArray(tags)) {
       res.status(400).json({
         success: false,
-        message: 'Contact form ID is required'
-      });
-      return;
+        message: 'Tags must be an array'
+      })
+      return
     }
 
-    if (!tags || !Array.isArray(tags)) {
-      res.status(400).json({
-        success: false,
-        message: 'Tags array is required'
-      });
-      return;
-    }
+    const result = await contactForm.updateContactFormTags(id, tags)
 
-    // Validate that all tags are strings
-    const invalidTags = tags.filter(tag => typeof tag !== 'string' || tag.trim() === '');
-    if (invalidTags.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: 'All tags must be non-empty strings'
-      });
-      return;
-    }
-
-    // Clean and format tags (trim whitespace, convert to lowercase for consistency)
-    const cleanedTags = tags.map(tag => tag.trim().toLowerCase());
-
-    const result = await contactForm.updateContactFormTags(id, cleanedTags);
-    
     res.json({
       success: true,
-      message: 'Tags added to contact form successfully',
-      data: result
-    });
+      data: result,
+      message: 'Contact form tags updated successfully'
+    })
   } catch (error) {
-    res.status(500).json({
+    const message = (error as Error).message
+    res.status(message.includes('not found') ? 404 : 500).json({
       success: false,
-      message: (error as Error).message
-    });
+      message
+    })
   }
-};
+}
 
 export const deleteContactForm = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    
-    if (!id) {
-      res.status(400).json({
-        success: false,
-        message: 'Contact form ID is required'
-      });
-      return;
-    }
+    const { id } = req.params
 
-    // Check if contact form exists before deleting
-    const existingContactForm = await contactForm.getContactFormById(id);
-    if (!existingContactForm) {
-      res.status(404).json({
-        success: false,
-        message: 'Contact form not found'
-      });
-      return;
-    }
+    await contactForm.deleteContactForm(id)
 
-    await contactForm.deleteContactForm(id);
-    
     res.json({
       success: true,
       message: 'Contact form deleted successfully'
-    });
+    })
   } catch (error) {
-    res.status(500).json({
+    const message = (error as Error).message
+    res.status(message.includes('not found') ? 404 : 500).json({
       success: false,
-      message: (error as Error).message
-    });
+      message
+    })
   }
-};
+}
 
-export const createContactFormPDFById = async (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
-  const log = req.log.child({ route: 'contactForm.exportPDF', contactFormId: id });
-
-  if (!id) {
-    log.warn('missing-id');
-    res.status(400).json({ success: false, message: 'Missing route param: id' });
-    return;
-  }
-
+export const createContactFormPDFById = async (req: Request, res: Response) => {
   try {
-    const pdfBuffer = await contactForm.createContactFormPDFById(id);
+    const { id } = req.params
+    const pdfBuffer = await contactForm.createContactFormPDFById(id)
 
-    const contactFormDocument = await contactForm.getContactFormById(id);
-    if (!contactFormDocument) log.warn('contact-form-not-found-for-filename');
-
-    const base = contactFormDocument
-      ? safe(`contact-form-${contactFormDocument.first_name}-${contactFormDocument.last_name}`)
-      : 'contact-form';
-    const filename = `${base}-${id.slice(0, 8)}.pdf`;
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', contentDisposition(filename));
-    res.setHeader('X-Filename', encodeURIComponent(filename));
-    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Filename');
-    res.setHeader('Content-Length', String(pdfBuffer.length));
-
-    // log aborted downloads too
-    res.on('close', () => {
-      if (!res.writableEnded) {
-        log.warn({ statusCode: res.statusCode }, 'download-aborted');
-      }
-    });
-
-    res.end(pdfBuffer);
-
-    log.info({ filename, pdfBytes: pdfBuffer.length }, 'success');
-  } catch (err) {
-    log.error({ err }, 'export-pdf-error');
-    next(err); // let the central error handler respond
-    return;
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="contact-form-${id}.pdf"`)
+    res.send(pdfBuffer)
+  } catch (error) {
+    const message = (error as Error).message
+    res.status(message.includes('not found') ? 404 : 500).json({
+      success: false,
+      message
+    })
   }
-};
-
+}
 
 export const createContactFormPDFBulk = async (req: Request, res: Response) => {
   try {
-    const { ids } = req.body;
-    
+    const { ids } = req.body
+
     if (!Array.isArray(ids) || ids.length === 0) {
       res.status(400).json({
         success: false,
-        message: 'ids array is required and cannot be empty'
-      });
-      return;
+        message: 'ids must be a non-empty array'
+      })
+      return
     }
 
-    const zipBuffer = await contactForm.createContactFormPDFBulk(ids);
-    
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const filename = `contact-forms-bulk-${timestamp}.zip`;
-    
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(zipBuffer);
+    const zipBuffer = await contactForm.createContactFormPDFBulk(ids)
+
+    res.setHeader('Content-Type', 'application/zip')
+    res.setHeader('Content-Disposition', 'attachment; filename="contact-forms.zip"')
+    res.send(zipBuffer)
   } catch (error) {
     res.status(500).json({
       success: false,
       message: (error as Error).message
-    });
+    })
   }
-};
+}
