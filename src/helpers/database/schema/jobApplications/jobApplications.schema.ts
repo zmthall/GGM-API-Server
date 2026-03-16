@@ -24,7 +24,6 @@ export const jobApplicationsSchema: DatabaseSchemaModule = {
       personal_payload jsonb not null default '{}'::jsonb,
       driving_payload jsonb not null default '{}'::jsonb,
       work_payload jsonb not null default '{}'::jsonb,
-      resume_payload jsonb not null default '{}'::jsonb,
 
       raw_payload jsonb not null default '{}'::jsonb
     );`,

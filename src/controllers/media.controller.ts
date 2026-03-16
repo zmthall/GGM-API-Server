@@ -1,13 +1,13 @@
 // /controllers/media.controller.ts
 import type { Request, Response } from 'express';
 import { saveCommunityMediaFile, deleteCommunityImageByUUID, removeAltFromImagesJson, fetchCommunityImageData } from '../services/media.services';
-import path from 'path';
+import path from 'node:path';
 
 interface MulterFiles {
   [fieldname: string]: Express.Multer.File[];
 }
 
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
 // To use this it is either key single (1 image) or key multi (25 total images)
 export const uploadCommunityMedia = async (req: Request, res: Response) => {
@@ -30,7 +30,7 @@ export const uploadCommunityMedia = async (req: Request, res: Response) => {
     }
 
     // Validate extensions
-    const isValidFile = (file: any) => ALLOWED_EXTENSIONS.includes(path.extname(file.originalname).toLowerCase());
+    const isValidFile = (file: any) => ALLOWED_EXTENSIONS.has(path.extname(file.originalname).toLowerCase());
 
     if (singleFile && !isValidFile(singleFile)) {
       res.status(400).json({ message: `Invalid file type: ${singleFile.originalname}` });

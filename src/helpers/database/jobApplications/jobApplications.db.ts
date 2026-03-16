@@ -1,4 +1,5 @@
 import { postgresPool } from '../../../config/postgres'
+import { toSafeDate, toSafeObject, toSafeString, toSafeStringArray } from '../../safe'
 
 const TABLE_NAME = 'job_applications'
 
@@ -15,7 +16,6 @@ export interface JobApplicationRecord {
   personal_payload: Record<string, unknown>
   driving_payload: Record<string, unknown>
   work_payload: Record<string, unknown>
-  resume_payload: Record<string, unknown>
   raw_payload: Record<string, unknown>
 }
 
@@ -31,7 +31,6 @@ export interface CreateJobApplicationInput {
   personalPayload?: Record<string, unknown>
   drivingPayload?: Record<string, unknown>
   workPayload?: Record<string, unknown>
-  resumePayload?: Record<string, unknown>
   rawPayload?: Record<string, unknown>
 }
 
@@ -45,8 +44,25 @@ export interface UpdateJobApplicationInput {
   personalPayload?: Record<string, unknown>
   drivingPayload?: Record<string, unknown>
   workPayload?: Record<string, unknown>
-  resumePayload?: Record<string, unknown>
   rawPayload?: Record<string, unknown>
+}
+
+const mapRow = (row: Record<string, unknown>): JobApplicationRecord => {
+  return {
+    id: toSafeString(row.id),
+    contact_type: toSafeString(row.contact_type),
+    created_at: toSafeDate(row.created_at),
+    department: toSafeString(row.department),
+    position: toSafeString(row.position),
+    position_name: toSafeString(row.position_name),
+    status: toSafeString(row.status),
+    tags: toSafeStringArray(row.tags),
+    updated_at: toSafeDate(row.updated_at),
+    personal_payload: toSafeObject(row.personal_payload),
+    driving_payload: toSafeObject(row.driving_payload),
+    work_payload: toSafeObject(row.work_payload),
+    raw_payload: toSafeObject(row.raw_payload)
+  }
 }
 
 export const upsertJobApplication = async (
@@ -66,10 +82,9 @@ export const upsertJobApplication = async (
       personal_payload,
       driving_payload,
       work_payload,
-      resume_payload,
       raw_payload
     )
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12::jsonb,$13::jsonb)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12::jsonb)
     on conflict (id)
     do update set
       contact_type = excluded.contact_type,
@@ -81,8 +96,8 @@ export const upsertJobApplication = async (
       personal_payload = excluded.personal_payload,
       driving_payload = excluded.driving_payload,
       work_payload = excluded.work_payload,
-      resume_payload = excluded.resume_payload,
-      raw_payload = excluded.raw_payload
+      raw_payload = excluded.raw_payload,
+      updated_at = now()
     returning *
     `,
     [
@@ -97,31 +112,11 @@ export const upsertJobApplication = async (
       JSON.stringify(input.personalPayload ?? {}),
       JSON.stringify(input.drivingPayload ?? {}),
       JSON.stringify(input.workPayload ?? {}),
-      JSON.stringify(input.resumePayload ?? {}),
       JSON.stringify(input.rawPayload ?? {})
     ]
   )
 
   return mapRow(result.rows[0])
-}
-
-const mapRow = (row: Record<string, unknown>): JobApplicationRecord => {
-  return {
-    id: String(row.id),
-    contact_type: String(row.contact_type ?? ''),
-    created_at: row.created_at as Date,
-    department: String(row.department ?? ''),
-    position: String(row.position ?? ''),
-    position_name: String(row.position_name ?? ''),
-    status: String(row.status ?? ''),
-    tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-    updated_at: row.updated_at as Date,
-    personal_payload: (row.personal_payload as Record<string, unknown>) ?? {},
-    driving_payload: (row.driving_payload as Record<string, unknown>) ?? {},
-    work_payload: (row.work_payload as Record<string, unknown>) ?? {},
-    resume_payload: (row.resume_payload as Record<string, unknown>) ?? {},
-    raw_payload: (row.raw_payload as Record<string, unknown>) ?? {}
-  }
 }
 
 export const getJobApplicationById = async (id: string): Promise<JobApplicationRecord | null> => {
@@ -142,7 +137,9 @@ export const listJobApplications = async (): Promise<JobApplicationRecord[]> => 
   const result = await postgresPool.query(
     `select *
     from ${TABLE_NAME}
-    order by created_at desc`
+    order by
+      case when lower(status) = 'new' then 0 else 1 end,
+      created_at desc`
   )
 
   return result.rows.map(mapRow)
@@ -165,7 +162,9 @@ export const listJobApplicationsByDepartment = async (department: string): Promi
     `select *
     from ${TABLE_NAME}
     where department = $1
-    order by created_at desc`,
+    order by
+      case when lower(status) = 'new' then 0 else 1 end,
+      created_at desc`,
     [department]
   )
 
@@ -188,10 +187,9 @@ export const createJobApplication = async (
       personal_payload,
       driving_payload,
       work_payload,
-      resume_payload,
       raw_payload
     )
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12::jsonb)
     returning *`,
     [
       input.id,
@@ -205,7 +203,6 @@ export const createJobApplication = async (
       JSON.stringify(input.personalPayload ?? {}),
       JSON.stringify(input.drivingPayload ?? {}),
       JSON.stringify(input.workPayload ?? {}),
-      JSON.stringify(input.resumePayload ?? {}),
       JSON.stringify(input.rawPayload ?? {})
     ]
   )
@@ -229,8 +226,8 @@ export const updateJobApplication = async (
       personal_payload = coalesce($8::jsonb, personal_payload),
       driving_payload = coalesce($9::jsonb, driving_payload),
       work_payload = coalesce($10::jsonb, work_payload),
-      resume_payload = coalesce($11::jsonb, resume_payload),
-      raw_payload = coalesce($12::jsonb, raw_payload)
+      raw_payload = coalesce($11::jsonb, raw_payload),
+      updated_at = now()
     where id = $1
     returning *`,
     [
@@ -244,7 +241,6 @@ export const updateJobApplication = async (
       input.personalPayload ? JSON.stringify(input.personalPayload) : null,
       input.drivingPayload ? JSON.stringify(input.drivingPayload) : null,
       input.workPayload ? JSON.stringify(input.workPayload) : null,
-      input.resumePayload ? JSON.stringify(input.resumePayload) : null,
       input.rawPayload ? JSON.stringify(input.rawPayload) : null
     ]
   )

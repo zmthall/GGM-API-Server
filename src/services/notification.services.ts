@@ -8,6 +8,7 @@ import {
   decrementMessagesNew,
   decrementRideRequestsNew
 } from '../helpers/database/adminMeta/correspondenceCounts.db'
+import { toSafeString } from '../helpers/safe'
 import { CorrespondenceStatus, NotificationCounts, CorrespondenceType } from '../types/notification'
 
 const toNumber = (v: unknown) => {
@@ -16,7 +17,7 @@ const toNumber = (v: unknown) => {
   return Math.max(0, Math.floor(n))
 }
 
-const normalizeStatus = (v: unknown) => String(v ?? '').trim().toLowerCase()
+const normalizeStatus = (v: unknown) => toSafeString(v ?? '').trim().toLowerCase()
 
 export const getAllNotificationCounts = async (): Promise<NotificationCounts> => {
   await ensureCorrespondenceCountsExists()
@@ -85,8 +86,8 @@ export const decreaseNotificationCount = async (type: CorrespondenceType, amount
 
 export const syncNotificationCountOnStatusChange = async (
   type: CorrespondenceType,
-  prevStatus: CorrespondenceStatus | string  | undefined,
-  nextStatus: CorrespondenceStatus | string | undefined
+  prevStatus: CorrespondenceStatus | undefined,
+  nextStatus: CorrespondenceStatus | undefined
 ): Promise<void> => {
   const prev = normalizeStatus(prevStatus)
   const next = normalizeStatus(nextStatus)
@@ -96,6 +97,17 @@ export const syncNotificationCountOnStatusChange = async (
   }
 
   if (prev === 'new' && next !== 'new') {
+    await decreaseNotificationCount(type, 1)
+  }
+}
+
+export const syncNotificationCountOnDelete = async (
+  type: CorrespondenceType,
+  currentStatus: CorrespondenceStatus | undefined
+): Promise<void> => {
+  const current = normalizeStatus(currentStatus)
+
+  if (current === 'new') {
     await decreaseNotificationCount(type, 1)
   }
 }

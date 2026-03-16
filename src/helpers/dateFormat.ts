@@ -1,3 +1,14 @@
+// Add ordinal suffix (st, nd, rd, th)
+  function getOrdinalSuffix(day: number): string {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
 export const formatDateTime = (dateInput: string | Date): string => {
   const date = new Date(dateInput);
   
@@ -9,17 +20,6 @@ export const formatDateTime = (dateInput: string | Date): string => {
   const day: number = date.getDate();
   const month: string = months[date.getMonth()];
   const year: number = date.getFullYear();
-  
-  // Add ordinal suffix (st, nd, rd, th)
-  function getOrdinalSuffix(day: number): string {
-    if (day > 3 && day < 21) return 'th';
-    switch (day % 10) {
-      case 1: return 'st';
-      case 2: return 'nd';
-      case 3: return 'rd';
-      default: return 'th';
-    }
-  }
   
   // Format time to 12-hour format
   const timeString = new Intl.DateTimeFormat('en-US', {
@@ -46,7 +46,7 @@ export const formatSubmissionDate = (date: Date = new Date()): string => {
     
     // Convert to 12-hour format
     hours = hours % 12;
-    hours = hours ? hours : 12; // 0 should be 12
+    if (hours === 0) hours = 12; // 0 should be 12
     
     // Pad minutes and seconds with leading zeros
     const minutesStr = minutes.toString().padStart(2, '0');

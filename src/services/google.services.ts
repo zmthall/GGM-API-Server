@@ -2,14 +2,14 @@
 import { google, Auth } from 'googleapis';
 import { googleSpreadSheetID, googleFolderID, googleCredentials } from '../config/google';
 import type { FileUpload, FileData, ApplicationData } from '../types/application';
-import * as stream from 'stream';
+import * as stream from 'node:stream';
 import { formatSubmissionDate } from '../helpers/dateFormat';
 import { getPositionLabel } from '../helpers/applicationPosition';
 
 class GoogleAPIService {
-    private spreadsheetId: string;
-    private folderId: string;
-    private keyFile: string;
+    private readonly spreadsheetId: string;
+    private readonly folderId: string;
+    private readonly keyFile: string;
 
     constructor() {
         this.spreadsheetId = googleSpreadSheetID || '';

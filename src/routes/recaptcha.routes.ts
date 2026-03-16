@@ -4,9 +4,6 @@ import { verifyRecaptcha } from '../controllers/recaptcha.controller';
 
 const router = Router();
 
-// Middleware
-// import { authenticateKey } from '../middlewares/authenticateKey';
-
 router.post('/verify', verifyRecaptcha);
 
 router.get('/route/health', (req, res) => {

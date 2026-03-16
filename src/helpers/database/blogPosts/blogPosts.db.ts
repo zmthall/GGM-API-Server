@@ -1,4 +1,5 @@
 import { postgresPool } from '../../../config/postgres'
+import { toSafeBoolean, toSafeDate, toSafeNullableDate, toSafeObject, toSafeString, toSafeStringArray } from '../../safe'
 
 const TABLE_NAME = 'blog_posts'
 
@@ -95,31 +96,31 @@ export interface ListBlogPostsOptions {
 
 const mapRow = (row: Record<string, unknown>): BlogPostRecord => {
   return {
-    id: String(row.id),
-    slug: String(row.slug ?? ''),
-    title: String(row.title ?? ''),
-    description: String(row.description ?? ''),
-    summary: String(row.summary ?? ''),
-    author: String(row.author ?? ''),
-    draft: Boolean(row.draft),
-    staff_pick: Boolean(row.staff_pick),
-    date: (row.date as Date | null) ?? null,
-    published: row.published ? String(row.published) : null,
+    id: toSafeString(row.id),
+    slug: toSafeString(row.slug ?? ''),
+    title: toSafeString(row.title ?? ''),
+    description: toSafeString(row.description ?? ''),
+    summary: toSafeString(row.summary ?? ''),
+    author: toSafeString(row.author ?? ''),
+    draft: toSafeBoolean(row.draft),
+    staff_pick: toSafeBoolean(row.staff_pick),
+    date: toSafeNullableDate(row.date as Date),
+    published: row.published ? toSafeString(row.published) : null,
     read_time: Number(row.read_time ?? 0),
-    thumbnail: String(row.thumbnail ?? ''),
-    thumbnail_alt: String(row.thumbnail_alt ?? ''),
+    thumbnail: toSafeString(row.thumbnail ?? ''),
+    thumbnail_alt: toSafeString(row.thumbnail_alt ?? ''),
     thumbnail_width: row.thumbnail_width == null ? null : Number(row.thumbnail_width),
     thumbnail_height: row.thumbnail_height == null ? null : Number(row.thumbnail_height),
-    body_markdown: String(row.body_markdown ?? ''),
-    source_file: String(row.source_file ?? ''),
-    source_file_path: String(row.source_file_path ?? ''),
-    source_content_id: String(row.source_content_id ?? ''),
-    source_path: String(row.source_path ?? ''),
-    tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-    created_at: row.created_at as Date,
-    updated_at: row.updated_at as Date,
-    raw_frontmatter: (row.raw_frontmatter as Record<string, unknown>) ?? {},
-    raw_document: (row.raw_document as Record<string, unknown>) ?? {}
+    body_markdown: toSafeString(row.body_markdown ?? ''),
+    source_file: toSafeString(row.source_file ?? ''),
+    source_file_path: toSafeString(row.source_file_path ?? ''),
+    source_content_id: toSafeString(row.source_content_id ?? ''),
+    source_path: toSafeString(row.source_path ?? ''),
+    tags: toSafeStringArray(row.tags),
+    created_at: toSafeDate(row.created_at),
+    updated_at: toSafeDate(row.updated_at),
+    raw_frontmatter: toSafeObject(row.raw_frontmatter),
+    raw_document: toSafeObject(row.raw_document)
   }
 }
 

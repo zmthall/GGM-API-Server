@@ -5,6 +5,7 @@ import { PDFDocument as PDFLibDocument } from 'pdf-lib'
 
 import type { ApplicationDocument, FileData } from '../../types/application'
 import { getPositionLabel } from '../applicationPosition'
+import { toSafeString } from '../safe'
 
 type PacketKind = 'general' | 'driver' | 'house'
 
@@ -36,11 +37,11 @@ function extOf(filename: string) {
 }
 
 function safeText(v: unknown) {
-  return String(v ?? '').replace(/\s+/g, ' ').trim()
+  return toSafeString(v ?? '').replaceAll(/\s+/g, ' ').trim()
 }
 
 function yesNo(v: unknown) {
-  const s = String(v ?? '').trim().toLowerCase()
+  const s = toSafeString(v ?? '').trim().toLowerCase()
   if (['y', 'yes', 'true', '1'].includes(s)) return 'Yes'
   if (['n', 'no', 'false', '0'].includes(s)) return 'No'
   return s ? s[0].toUpperCase() + s.slice(1) : ''
@@ -216,8 +217,11 @@ class ApplicationSummaryPDFGenerator {
     doc.fontSize(10).fillColor('#7f8c8d').font('Helvetica')
       .text('Employment Application Packet (continued)', 50, 50, { align: 'center' })
 
+    const submittedText = submittedDateOnly ? ' • Submitted ' + submittedDateOnly : ''
+    const headerText = name + submittedText + ' • ' + kind.toUpperCase()
+
     doc.fontSize(9).fillColor('#7f8c8d')
-      .text(`${name}${submittedDateOnly ? ` • Submitted ${submittedDateOnly}` : ''} • ${kind.toUpperCase()}`, 50, 66, { align: 'center' })
+      .text(headerText, 50, 66, { align: 'center' })
 
     doc.strokeColor('#e5e7eb').lineWidth(1).moveTo(50, 84).lineTo(545, 84).stroke()
     doc.y = 105
@@ -387,11 +391,7 @@ class ApplicationSummaryPDFGenerator {
     doc.y = y + rowH
   }
 
-  private static addDetails(doc: PDFKit.PDFDocument, app: ApplicationDocument, kind: PacketKind) {
-    const p = app.personal
-    const w = app.work
-    const d = app.driving
-
+  private static addPersonalSection(doc: PDFKit.PDFDocument, app: ApplicationDocument, kind: PacketKind, p: any) {
     const first = safeText(p?.firstName || app.first_name)
     const last = safeText(p?.lastName || app.last_name)
     const fullName = `${first} ${last}`.trim()
@@ -413,48 +413,74 @@ class ApplicationSummaryPDFGenerator {
     this.addFormRow(doc, app, kind, 'Over 18:', yesNo(p?.over18), { underline: false })
     this.addFormRow(doc, app, kind, 'Authorized to Work:', yesNo(p?.citizen), { underline: false })
     this.addFormRow(doc, app, kind, 'Felony Charged:', yesNo(p?.felony), { underline: false })
+  }
 
+  private static addWorkSection(doc: PDFKit.PDFDocument, app: ApplicationDocument, kind: PacketKind, w: any) {
     this.addSectionTitle(doc, app, kind, 'Work Information')
 
     this.addFormRow(doc, app, kind, 'Learned about us:', safeText(w?.learnedAboutUs), { underline: true })
-    if (safeText(w?.otherExplain)) this.addFormRow(doc, app, kind, 'Other (details):', safeText(w?.otherExplain), { underline: false, minHeight: 22 })
+
+    if (safeText(w?.otherExplain)) {
+      this.addFormRow(doc, app, kind, 'Other (details):', safeText(w?.otherExplain), { underline: false, minHeight: 22 })
+    }
 
     this.addFormRow(doc, app, kind, 'Worked here before:', yesNo(w?.hasWorkedAtGoldenGate), { underline: false })
     this.addFormRow(doc, app, kind, 'Employment type:', safeText(w?.employmentType), { underline: true })
-    if (safeText(w?.availability)) this.addFormRow(doc, app, kind, 'Availability:', safeText(w?.availability), { underline: false, minHeight: 22 })
+
+    if (safeText(w?.availability)) {
+      this.addFormRow(doc, app, kind, 'Availability:', safeText(w?.availability), { underline: false, minHeight: 22 })
+    }
 
     this.addFormRow(doc, app, kind, 'Willing overtime:', yesNo(w?.willingToWorkOvertime), { underline: false })
     this.addFormRow(doc, app, kind, 'Preferred pay:', safeText(w?.preferablePayRate), { underline: true })
     this.addFormRow(doc, app, kind, 'Start date:', safeText(w?.dateAvailableToStart), { underline: true })
+  }
 
-    const showDriving = kind === 'driver' || Boolean(
-      d?.MVR?.filename ||
-      d?.driversLicense?.filename ||
-      safeText(d?.endorsements) ||
-      safeText(d?.accidents) ||
-      safeText(d?.trafficConvictions)
+  private static shouldShowDrivingSection(kind: PacketKind, d: any): boolean {
+    return (
+      kind === 'driver' ||
+      Boolean(
+        d?.MVR?.filename ||
+        d?.driversLicense?.filename ||
+        safeText(d?.endorsements) ||
+        safeText(d?.accidents) ||
+        safeText(d?.trafficConvictions)
+      )
     )
+  }
 
-    if (showDriving) {
-      this.addFooter(doc, app)
-      doc.addPage()
-      this.addContinuationHeader(doc, app, kind)
-      this.addSectionTitle(doc, app, kind, 'Driving Information')
-
-      this.addFormRow(doc, app, kind, 'Has endorsements:', yesNo(d?.hasEndorsements), { underline: false })
-      if (safeText(d?.endorsements)) this.addFormRow(doc, app, kind, 'Endorsements:', safeText(d?.endorsements), { underline: false, minHeight: 22 })
-
-      this.addFormRow(doc, app, kind, 'Accidents:', yesNo(d?.hasAccidents), { underline: false })
-      if (safeText(d?.accidents)) this.addFormRow(doc, app, kind, 'Accident notes:', safeText(d?.accidents), { underline: false, minHeight: 22 })
-
-      this.addFormRow(doc, app, kind, 'Traffic convictions:', yesNo(d?.hasTrafficConvictions), { underline: false })
-      if (safeText(d?.trafficConvictions)) this.addFormRow(doc, app, kind, 'Conviction notes:', safeText(d?.trafficConvictions), { underline: false, minHeight: 22 })
-
-      this.addFormRow(doc, app, kind, 'MVR provided:', yesNo(d?.hasMVR), { underline: false })
-    }
-
+  private static addDrivingSection(doc: PDFKit.PDFDocument, app: ApplicationDocument, kind: PacketKind, d: any) {
     this.addFooter(doc, app)
     doc.addPage()
+
+    this.addContinuationHeader(doc, app, kind)
+    this.addSectionTitle(doc, app, kind, 'Driving Information')
+
+    this.addFormRow(doc, app, kind, 'Has endorsements:', yesNo(d?.hasEndorsements), { underline: false })
+
+    if (safeText(d?.endorsements)) {
+      this.addFormRow(doc, app, kind, 'Endorsements:', safeText(d?.endorsements), { underline: false, minHeight: 22 })
+    }
+
+    this.addFormRow(doc, app, kind, 'Accidents:', yesNo(d?.hasAccidents), { underline: false })
+
+    if (safeText(d?.accidents)) {
+      this.addFormRow(doc, app, kind, 'Accident notes:', safeText(d?.accidents), { underline: false, minHeight: 22 })
+    }
+
+    this.addFormRow(doc, app, kind, 'Traffic convictions:', yesNo(d?.hasTrafficConvictions), { underline: false })
+
+    if (safeText(d?.trafficConvictions)) {
+      this.addFormRow(doc, app, kind, 'Conviction notes:', safeText(d?.trafficConvictions), { underline: false, minHeight: 22 })
+    }
+
+    this.addFormRow(doc, app, kind, 'MVR provided:', yesNo(d?.hasMVR), { underline: false })
+  }
+
+  private static addAttachmentsSection(doc: PDFKit.PDFDocument, app: ApplicationDocument, kind: PacketKind, w: any, d: any) {
+    this.addFooter(doc, app)
+    doc.addPage()
+
     this.addContinuationHeader(doc, app, kind)
     this.addSectionTitle(doc, app, kind, 'Attachments Checklist')
 
@@ -464,20 +490,41 @@ class ApplicationSummaryPDFGenerator {
 
     const okExt = (e: string) => ['pdf', 'png', 'jpg', 'jpeg'].includes(e)
 
-    const resumeLine = `${w?.resume?.filename ? (okExt(resumeExt) ? '[x]' : '[ ]') : '[ ]'} Resume (PDF/image)`
-    const mvrLine = `${d?.MVR?.filename ? (okExt(mvrExt) ? '[x]' : '[ ]') : '[ ]'} MVR (PDF/image)`
-    const dlLine = `${d?.driversLicense?.filename ? (okExt(dlExt) ? '[x]' : '[ ]') : '[ ]'} Driver's License (PDF/image)`
+    const checkbox = (filename?: string, ext?: string) =>
+  filename && okExt(ext ?? '') ? '[x]' : '[ ]'
 
+    const resumeLine = `${checkbox(w?.resume?.filename, resumeExt)} Resume (PDF/image)`
+    const mvrLine = `${checkbox(d?.MVR?.filename, mvrExt)} MVR (PDF/image)`
+    const dlLine = `${checkbox(d?.driversLicense?.filename, dlExt)} Driver's License (PDF/image)`
+    
     this.ensureSpace(doc, app, kind, 54)
+
     doc.fontSize(11).fillColor('#111827').font('Helvetica')
     doc.text(resumeLine, { align: 'left' })
     doc.text(mvrLine, { align: 'left' })
     doc.text(dlLine, { align: 'left' })
 
     doc.moveDown(0.3)
+
     doc.fontSize(9).fillColor('#7f8c8d').font('Helvetica')
       .text('If a file is not PDF/image, a placeholder page will be included telling staff to print it separately.')
+
     doc.moveDown(0.8)
+  }
+
+  private static addDetails(doc: PDFKit.PDFDocument, app: ApplicationDocument, kind: PacketKind) {
+    const p = app.personal
+    const w = app.work
+    const d = app.driving
+
+    this.addPersonalSection(doc, app, kind, p)
+    this.addWorkSection(doc, app, kind, w)
+
+    if (this.shouldShowDrivingSection(kind, d)) {
+      this.addDrivingSection(doc, app, kind, d)
+    }
+
+    this.addAttachmentsSection(doc, app, kind, w, d)
   }
 
   private static addDigitalSignatureBlock(doc: PDFKit.PDFDocument, app: ApplicationDocument, kind: PacketKind) {

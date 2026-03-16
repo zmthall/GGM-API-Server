@@ -1,4 +1,5 @@
 import { getDocument } from '../../../../helpers/firebase'
+import { toSafeNullableDate, toSafeNumber, toSafeObject } from '../../../safe'
 import {
   upsertCorrespondenceCounts
 } from '../../adminMeta/correspondenceCounts.db'
@@ -15,18 +16,6 @@ interface FirestoreCorrespondenceCountsDocument {
 
 const FIRESTORE_COLLECTION = 'admin_meta'
 const FIRESTORE_DOCUMENT_ID = 'correspondence_counts'
-
-const toDateOrNull = (value: unknown): Date | null => {
-  if (!value) return null
-  const parsed = new Date(String(value))
-  return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-
-const toSafeNumber = (value: unknown): number => {
-  const parsed = Number(value)
-  if (Number.isNaN(parsed) || parsed < 0) return 0
-  return parsed
-}
 
 export const migrateCorrespondenceCounts = async (): Promise<MigrationResult> => {
   const result: MigrationResult = {
@@ -58,9 +47,9 @@ export const migrateCorrespondenceCounts = async (): Promise<MigrationResult> =>
       applicationsNew: toSafeNumber(firestoreDoc.applicationsNew),
       messagesNew: toSafeNumber(firestoreDoc.messagesNew),
       rideRequestsNew: toSafeNumber(firestoreDoc.rideRequestsNew),
-      createdAt: toDateOrNull(firestoreDoc.createdAt),
-      updatedAt: toDateOrNull(firestoreDoc.updatedAt),
-      rawPayload: firestoreDoc as unknown as Record<string, unknown>
+      createdAt: toSafeNullableDate(firestoreDoc.createdAt),
+      updatedAt: toSafeNullableDate(firestoreDoc.updatedAt),
+      rawPayload: toSafeObject(firestoreDoc)
     })
 
     result.migratedCount = 1

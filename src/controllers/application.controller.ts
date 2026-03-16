@@ -3,9 +3,10 @@ import type { Request, Response, RequestHandler, NextFunction } from 'express'
 import contentDisposition from 'content-disposition'
 import type { FileUpload } from '../types/application'
 import * as applicationService from '../services/application.services'
+import { safe } from '../helpers/safe'
 
 function parseApplicationData(req: Request) {
-  const raw = (req.body as any)?.applicationData ?? req.body
+  const raw = req.body?.applicationData ?? req.body
   if (typeof raw === 'string') return JSON.parse(raw)
   return raw
 }
@@ -19,7 +20,7 @@ function qString(v: unknown): string | undefined {
 
 function qInt(v: unknown, fallback: number): number {
   const s = qString(v)
-  const n = s ? parseInt(s, 10) : NaN
+  const n = s ? Number.parseInt(s, 10) : Number.NaN
   return Number.isFinite(n) ? n : fallback
 }
 
@@ -32,18 +33,11 @@ function qBool(v: unknown, fallback: boolean): boolean {
   return fallback
 }
 
-const safe = (s: string) =>
-  (s ?? '')
-    .normalize('NFKC')
-    .replace(/[\\/:*?"<>|\r\n\s]/g, '_')
-    .trim()
-    .slice(0, 120)
-
 function parseIdsFromRequest(req: Request): string[] {
   // Supports:
   // - GET /export/pdf/bulk?ids=a,b,c
   // - OR body { ids: [...] } (in case client sends it)
-  const fromBody = (req.body as any)?.ids
+  const fromBody = req.body?.ids
   if (Array.isArray(fromBody)) return fromBody.map(String).filter(Boolean)
 
   const idsQuery = qString((req.query as any)?.ids)
@@ -140,7 +134,7 @@ export const getApplicationById: RequestHandler = async (req: Request, res: Resp
 export const updateApplicationStatus: RequestHandler = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { status } = req.body as any
+    const { status } = req.body
 
     if (!id) {
       res.status(400).json({ success: false, message: 'Application ID is required' })
@@ -166,7 +160,7 @@ export const updateApplicationStatus: RequestHandler = async (req: Request, res:
 export const updateApplicationTags: RequestHandler = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { tags } = req.body as any
+    const { tags } = req.body
 
     if (!id) {
       res.status(400).json({ success: false, message: 'Application ID is required' })
@@ -221,7 +215,7 @@ export const createApplicationPacketPDFById = async (req: Request, res: Response
   const log = (req as any).log?.child?.({ route: 'application.exportPDF', applicationId: id }) ?? console
 
   if (!id) {
-    ;(log as any).warn?.('missing-id')
+    log.warn?.('missing-id')
     res.status(400).json({ success: false, message: 'Missing route param: id' })
     return
   }
@@ -232,7 +226,8 @@ export const createApplicationPacketPDFById = async (req: Request, res: Response
     const appDoc = await applicationService.getApplicationById(id)
     const first = appDoc?.personal?.firstName || appDoc?.first_name || ''
     const last = appDoc?.personal?.lastName || appDoc?.last_name || ''
-    const base = safe(`application-${`${first} ${last}`.trim() || 'applicant'}`)
+    const name = `${first} ${last}`.trim() || 'applicant';
+    const base = safe('application-' + name);
     const filename = `${base}-${id.slice(0, 8)}.pdf`
 
     res.setHeader('Content-Type', 'application/pdf')
@@ -243,14 +238,14 @@ export const createApplicationPacketPDFById = async (req: Request, res: Response
 
     res.on('close', () => {
       if (!res.writableEnded) {
-        ;(log as any).warn?.({ statusCode: res.statusCode }, 'download-aborted')
+        log.warn?.({ statusCode: res.statusCode }, 'download-aborted')
       }
     })
 
     res.end(pdfBuffer)
-    ;(log as any).info?.({ filename, pdfBytes: pdfBuffer.length }, 'success')
+    log.info?.({ filename, pdfBytes: pdfBuffer.length }, 'success')
   } catch (err) {
-    ;(log as any).error?.({ err }, 'export-pdf-error')
+    log.error?.({ err }, 'export-pdf-error')
     next(err)
     return
   }

@@ -1,4 +1,5 @@
 import { getAllDocuments } from '../../../../helpers/firebase'
+import { toSafeString } from '../../../safe'
 import { upsertJobApplication } from '../../jobApplications/jobApplications.db'
 import type { MigrationResult } from '../shared/migration.types'
 
@@ -23,7 +24,7 @@ const FIRESTORE_COLLECTION = 'job_applications'
 
 const toDateOrNull = (value: unknown): Date | null => {
   if (!value) return null
-  const parsed = new Date(String(value))
+  const parsed = new Date(toSafeString(value))
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
@@ -71,7 +72,6 @@ export const migrateJobApplications = async (): Promise<MigrationResult> => {
           personalPayload: toObject(application.personal),
           drivingPayload: toObject(application.driving),
           workPayload: toObject(application.work),
-          resumePayload: toObject(application.resume),
           rawPayload: { ...application }
         })
 

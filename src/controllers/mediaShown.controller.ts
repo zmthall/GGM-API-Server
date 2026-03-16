@@ -3,7 +3,8 @@ import { getSlotMap, replaceShownImageAtSlot, deleteShownImage, deleteAllShownIm
 import crypto from 'node:crypto'
 import type { Request, Response } from 'express';
 
-import fs from 'fs';
+import fs from 'node:fs';
+import { toSafeString } from '../helpers/safe';
 
 export const getCommunityShown = (req: Request, res: Response) => {
   const slotMap = getSlotMap();
@@ -11,10 +12,10 @@ export const getCommunityShown = (req: Request, res: Response) => {
 };
 
 export const updateCommunityShown = (req: Request, res: Response) => {
-  const slot = parseInt(req.params.slot, 10);
+  const slot = Number.parseInt(req.params.slot, 10);
   const file = req.file;
   
-  if (isNaN(slot) || slot < 0 || slot > 7) {
+  if (Number.isNaN(slot) || slot < 0 || slot > 7) {
     if(file) {
       fs.unlinkSync(file.path);
       res.status(400).json({ message: 'Slot must be between 0 and 7' });
@@ -57,13 +58,13 @@ export const updateCommunityShown = (req: Request, res: Response) => {
 };
 
 export const getCommunityShownImage = (req: Request, res: Response) => {
-  const slot = parseInt(req.params.slot, 10)
-  if (isNaN(slot) || slot < 0 || slot > 7) {
+  const slot = Number.parseInt(req.params.slot, 10)
+  if (Number.isNaN(slot) || slot < 0 || slot > 7) {
     res.status(400).json({ message: 'Slot must be between 0 and 7' })
     return
   }
 
-  const asBlob = String(req.query.format || '').toLowerCase() === 'blob'
+  const asBlob = toSafeString(req.query.format || '').toLowerCase() === 'blob'
 
   try {
     if (!asBlob) {
@@ -107,7 +108,7 @@ export const getCommunityShownImage = (req: Request, res: Response) => {
 
 export const deleteCommunityShownMedia = async (req: Request, res: Response) => {
   const { slot } = req.params;
-  const slotNumber = parseInt(slot, 10);
+  const slotNumber = Number.parseInt(slot, 10);
   
   if (slotNumber === undefined || slotNumber < 0 || slotNumber > 7) {
     res.status(400).json({ message: 'Slot must be an integer from 0 to 7.' });

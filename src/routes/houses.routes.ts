@@ -4,9 +4,6 @@ import { rebuildAllManifests, getHouseImages, getCombinedManifest } from '../con
 
 const router = Router();
 
-// Middleware
-// import { authenticateKey } from '../middlewares/authenticateKey';
-
 router.get('/images/manifest', getCombinedManifest)
 router.get('/images/:houseId', getHouseImages);
 

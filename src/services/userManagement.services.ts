@@ -12,12 +12,13 @@ import {
 } from '../helpers/database/users/users.db'
 import { PaginatedResult, PaginationOptions } from '../types/pagination'
 import type { UserProfile, UserRole } from '../types/user'
+import { toSafeString } from '../helpers/safe'
 
 const ALLOWED_ROLES = new Set<UserRole>(['admin', 'correspondence', 'user'])
 
 
 function normalizeRole(role?: unknown): UserRole {
-  const v = String(role ?? '').trim().toLowerCase()
+  const v = toSafeString(role ?? '').trim().toLowerCase()
   if (v === 'admin') return 'admin'
   if (v === 'correspondence') return 'correspondence'
   return 'user'

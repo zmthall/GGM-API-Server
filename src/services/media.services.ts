@@ -1,6 +1,6 @@
 // /services/media.services.ts
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { FULL_BASE_URL } from '../config/url';
 
 export const IMAGES_DIR = path.resolve('uploads/community/images');

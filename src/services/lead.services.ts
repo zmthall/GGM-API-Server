@@ -100,8 +100,8 @@ export const getLeadsByDate = async (
     
     const [month, day, year] = date.split('-')
 
-    const startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0, 0));
-    const endDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 23, 59, 59, 999));
+    const startDate = new Date(Date.UTC(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day), 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day), 23, 59, 59, 999));
     
     const result = await getPaginatedDocumentsByDateRange<Lead>(
         'leads',
@@ -134,10 +134,10 @@ export const getLeadsByDateRange = async (
     const pageSize = options.pageSize || 10;
     
     const [startMonth, startDay, startYear] = dateRange.startDate.split('-');
-    const startDate = new Date(Date.UTC(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay), 0, 0, 0, 0));
+    const startDate = new Date(Date.UTC(Number.parseInt(startYear), Number.parseInt(startMonth) - 1, Number.parseInt(startDay), 0, 0, 0, 0));
 
     const [endMonth, endDay, endYear] = dateRange.endDate.split('-');
-    const endDate = new Date(Date.UTC(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), 23, 59, 59, 999));
+    const endDate = new Date(Date.UTC(Number.parseInt(endYear), Number.parseInt(endMonth) - 1, Number.parseInt(endDay), 23, 59, 59, 999));
     
     const result = await getPaginatedDocumentsByDateRange<Lead>(
         'leads',
@@ -215,7 +215,7 @@ export const getLeadsByFilters = async (
 export const getLeadById = async (id: string): Promise<Lead | null> => {
   try {
     const result = await getDocument<Lead>('leads', id);
-    return result as Lead | null;
+    return result;
   } catch (error) {
     throw new Error(`Failed to get lead by ID: ${(error as Error).message}`);
   }
@@ -263,8 +263,8 @@ export const updateLeadTag = async (id: string, tag: string[]): Promise<Lead> =>
 export const updateLeadStatus = async (id: string, status: LeadStatus): Promise<Lead> => {
   try {
     // Validate status
-    const validStatuses: LeadStatus[] = ['New', 'Reviewed', 'Contacted', 'Qualified', 'Converted', 'Lost', 'Spam'];
-    if (!validStatuses.includes(status)) {
+    const validStatuses: Set<LeadStatus> = new Set(['New', 'Reviewed', 'Contacted', 'Qualified', 'Converted', 'Lost', 'Spam']);
+    if (!validStatuses.has(status)) {
       throw new Error('Invalid lead status');
     }
 
@@ -285,7 +285,7 @@ export const updateLeadStatusBulk = async (
   statuses: LeadStatus | LeadStatus[]
 ): Promise<Lead[]> => {
   try {
-    const validStatuses: LeadStatus[] = ['New', 'Reviewed', 'Contacted', 'Qualified', 'Converted', 'Lost', 'Spam'];
+    const validStatuses: Set<LeadStatus> = new Set(['New', 'Reviewed', 'Contacted', 'Qualified', 'Converted', 'Lost', 'Spam']);
     
     let statusArray: LeadStatus[];
     
@@ -302,13 +302,13 @@ export const updateLeadStatusBulk = async (
       
       // Validate all statuses
       for (const status of statusArray) {
-        if (!validStatuses.includes(status)) {
+        if (!validStatuses.has(status)) {
           throw new Error(`Invalid lead status: ${status}`);
         }
       }
     } else {
       // Single status - apply to all
-      if (!validStatuses.includes(statuses)) {
+      if (!validStatuses.has(statuses)) {
         throw new Error(`Invalid lead status: ${statuses}`);
       }
       statusArray = new Array(ids.length).fill(statuses);
@@ -493,9 +493,12 @@ export const getLeadStats = async (): Promise<LeadStats> => {
     const conversionRate = totalLeads > 0 ? Number(((convertedLeads / totalLeads) * 100).toFixed(1)) : 0;
 
     // Calculate month-over-month growth
-    const monthlyGrowthRate = leadsLastMonth > 0 
-      ? Number((((leadsThisMonth - leadsLastMonth) / leadsLastMonth) * 100).toFixed(1))
-      : leadsThisMonth > 0 ? 100 : 0;
+    let monthlyGrowthRate = 0;
+    if (leadsLastMonth > 0) {
+      monthlyGrowthRate = Number((((leadsThisMonth - leadsLastMonth) / leadsLastMonth) * 100).toFixed(1));
+    } else if (leadsThisMonth > 0) {
+      monthlyGrowthRate = 100;
+    }
 
     // Top sources (limit to top 5)
     const topSources = Object.entries(sourceBreakdown)

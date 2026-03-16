@@ -1,18 +1,18 @@
 import express, { NextFunction, Request, Response } from 'express'
-import path from 'path';
+import path from 'node:path';
 import cors from 'cors';
 import 'dotenv/config';
 
 import pinoHttp from 'pino-http';
 import { logger, randomID } from './logger';
 
-const allowedOrigins = [
+const allowedOrigins = new Set([
   'https://goldengatemanor.com',
   'https://www.goldengatemanor.com',
   'https://dev.goldengatemanor.com',
   'http://localhost:3000',
   'http://127.0.0.1:3000'
-];
+]);
 
 // Routing imports
 import mediaRouter from './routes/media.routes';
@@ -43,7 +43,7 @@ app.set('trust proxy', true);
 // CORS for API routes
 app.use(cors({
   origin(origin, cb) {
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin || allowedOrigins.has(origin)) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,

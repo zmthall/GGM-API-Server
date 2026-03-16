@@ -1,6 +1,6 @@
 // /config/crypto.ts
 import 'dotenv/config';
-import fs from 'fs';
+import fs from 'node:fs';
 import { CryptoConfig } from '../types/crypto';
 
 export const CRYPTO_ALGO = 'aes-256-gcm' as const;

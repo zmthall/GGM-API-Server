@@ -1,4 +1,5 @@
 import { getAllDocuments } from '../../../../helpers/firebase'
+import { toSafeString } from '../../../safe'
 import { upsertRideRequest } from '../../rideRequests/rideRequests.db'
 import type { MigrationResult } from '../shared/migration.types'
 
@@ -29,13 +30,13 @@ const FIRESTORE_COLLECTION = 'ride_requests'
 
 const toDateOrNull = (value: unknown): Date | null => {
   if (!value) return null
-  const parsed = new Date(String(value))
+  const parsed = new Date(toSafeString(value))
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
 const toDateStringOrNull = (value: unknown): string | null => {
   if (!value) return null
-  const stringValue = String(value).trim()
+  const stringValue = toSafeString(value).trim()
   if (!stringValue) return null
   return stringValue
 }

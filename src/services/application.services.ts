@@ -6,24 +6,23 @@ import type { ApplicationData, ApplicationDocument, ApplicationRequestStatus, Fi
 import type { PaginatedResult, PaginationOptions } from '../types/pagination'
 
 import { cryptoService } from './crypto.services'
-import { deleteDocument, getDocument, getPaginatedDocuments, saveApplicationData, updateDocument } from '../helpers/firebase'
+import {
+  createJobApplication,
+  deleteJobApplication,
+  getJobApplicationById,
+  listJobApplications,
+  updateJobApplication
+} from '../helpers/database/jobApplications/jobApplications.db'
 
-// ✅ PDF packet generator
 import { ApplicationPacketPDFGenerator } from '../helpers/pdfGenerator/applicationPacketGenerator'
 import { Zippper } from '../helpers/fileZip'
-import { increaseNotificationCount, syncNotificationCountOnStatusChange } from './notification.services'
+import { increaseNotificationCount, syncNotificationCountOnDelete, syncNotificationCountOnStatusChange } from './notification.services'
 import { NOTIFICATION_TYPE_BY_COLLECTION } from '../config/notification'
+import { safe, toSafeCorrespondenceStatus, toSafeRecord } from '../helpers/safe'
 
 type PDFFile = { buffer: Buffer; filename: string }
 
 const COLLECTION = 'job_applications'
-
-const safe = (s: string) =>
-  (s ?? '')
-    .normalize('NFKC')
-    .replace(/[\\/:*?"<>|\r\n\s]/g, '_')
-    .trim()
-    .slice(0, 120)
 
 function splitPosition(v: string) {
   const raw = (v ?? '').trim()
@@ -78,6 +77,76 @@ function mergeUploadedFiles(app: ApplicationData, uploaded: Record<string, FileD
   return merged
 }
 
+function mapRecordToApplicationDocument(
+  record: Awaited<ReturnType<typeof getJobApplicationById>> extends infer T
+    ? T extends null
+      ? never
+      : T
+    : never
+): ApplicationDocument {
+  const personal = record.personal_payload as unknown as ApplicationDocument['personal']
+  const driving = record.driving_payload as unknown as ApplicationDocument['driving']
+  const work = record.work_payload as unknown as ApplicationDocument['work']
+
+  return {
+    id: record.id,
+    contact_type: record.contact_type,
+    created_at: record.created_at.toISOString(),
+    department: record.department,
+    position: record.position,
+    position_name: record.position_name,
+    status: record.status as ApplicationRequestStatus,
+    tags: record.tags,
+    updated_at: record.updated_at.toISOString(),
+
+    personal,
+    driving,
+    work,
+
+    first_name: personal.firstName,
+    last_name: personal.lastName,
+    phone: personal.phoneNumber
+  } as unknown as ApplicationDocument
+}
+
+function applyFilters(
+  items: ApplicationDocument[],
+  filters: Record<string, unknown> = {}
+): ApplicationDocument[] {
+  return items.filter((item) => {
+    return Object.entries(filters).every(([key, value]) => {
+      if (value === undefined || value === null || value === '') return true
+      return (item as unknown as Record<string, unknown>)[key] === value
+    })
+  })
+}
+
+function applyOmitSpam(items: ApplicationDocument[], omit: boolean): ApplicationDocument[] {
+  if (!omit) return items
+  return items.filter((item) => item.status !== 'spam')
+}
+
+function paginateItems<T>(items: T[], options: PaginationOptions = {}): PaginatedResult<T> {
+  const currentPage = Math.max(1, Number(options.page) || 1)
+  const pageSize = Math.max(1, Number(options.pageSize) || 10)
+  const totalItems = items.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const startIndex = (currentPage - 1) * pageSize
+  const data = items.slice(startIndex, startIndex + pageSize)
+
+  return {
+    data,
+    pagination: {
+      currentPage,
+      pageSize,
+      totalItems,
+      totalPages,
+      hasNextPage: currentPage < totalPages,
+      hasPreviousPage: currentPage > 1
+    }
+  }
+}
+
 export const submitApplication = async (applicationData: ApplicationData, files: FileUpload[]) => {
   const position = String(applicationData?.personal?.select ?? '').trim()
   const { department, position_name } = splitPosition(position)
@@ -85,23 +154,29 @@ export const submitApplication = async (applicationData: ApplicationData, files:
   const hasResumeUpload = (files || []).some(f => f?.fieldname === 'resume')
   if (!hasResumeUpload) throw new Error('Missing required file: resume')
 
-  // Step 1: encrypt
   const encryptedData = cryptoService.encryptApplication(applicationData)
 
-  // Step 2: save encrypted + store queryable meta fields
-  const saveResult = await saveApplicationData(encryptedData, COLLECTION, {
-    status: 'new',
+  const created = await createJobApplication({
+    id: randomUUID(),
+    contactType: 'Job Application',
+    createdAt: new Date(),
+    department,
     position,
-    additionalFields: { department, position_name }
+    positionName: position_name,
+    status: 'new',
+    tags: [],
+    personalPayload: toSafeRecord(encryptedData.personal),
+    drivingPayload: toSafeRecord(encryptedData.driving),
+    workPayload: toSafeRecord(encryptedData.work),
+    rawPayload: {}
   })
 
-  if(saveResult.id) await increaseNotificationCount(NOTIFICATION_TYPE_BY_COLLECTION[COLLECTION])
+  if (created.id) {
+    await increaseNotificationCount(NOTIFICATION_TYPE_BY_COLLECTION[COLLECTION])
+  }
 
-  if (!saveResult?.id) throw new Error('Failed to save application (no document id returned)')
+  const documentId = created.id
 
-  const documentId = saveResult.id
-
-  // Upload files, then merge + re-encrypt and update
   const uploaded: Record<string, FileData> = {}
   for (const f of files || []) {
     if (!f?.buffer?.length) continue
@@ -112,9 +187,10 @@ export const submitApplication = async (applicationData: ApplicationData, files:
     const merged = mergeUploadedFiles(applicationData, uploaded)
     const encryptedMerged = cryptoService.encryptApplication(merged)
 
-    await updateDocument(COLLECTION, documentId, {
-      ...encryptedMerged,
-      updated_at: new Date().toISOString()
+    await updateJobApplication(documentId, {
+      personalPayload: toSafeRecord(encryptedMerged.personal),
+      drivingPayload: toSafeRecord(encryptedMerged.driving),
+      workPayload: toSafeRecord(encryptedMerged.work)
     })
   }
 
@@ -126,81 +202,79 @@ export const getAllApplications = async (
   omit: boolean = true,
   options: PaginationOptions = {}
 ): Promise<PaginatedResult<ApplicationDocument>> => {
-  const page = options.page || 1
-  const pageSize = options.pageSize || 10
-
-  const omitValue = omit ? { status: 'spam' } : {}
-
-  const result = await getPaginatedDocuments<ApplicationDocument>(
-    COLLECTION,
-    filters,
-    omitValue,
-    { page, pageSize, orderField: 'created_at', orderDirection: 'desc' }
-  )
+  const records = await listJobApplications()
+  const docs = records.map(mapRecordToApplicationDocument)
+  const filtered = applyOmitSpam(applyFilters(docs, filters), omit)
+  const paginated = paginateItems(filtered, options)
 
   return {
-    data: cryptoService.decryptApplications(result.data),
-    pagination: result.pagination
+    data: cryptoService.decryptApplications(paginated.data),
+    pagination: paginated.pagination
   }
 }
 
 export const getApplicationById = async (id: string): Promise<ApplicationDocument> => {
-  const doc = await getDocument<ApplicationDocument>(COLLECTION, id)
-  if (!doc) throw new Error('Application not found')
-  return cryptoService.decryptApplication(doc)
+  const record = await getJobApplicationById(id)
+  if (!record) throw new Error('Application not found')
+  return cryptoService.decryptApplication(mapRecordToApplicationDocument(record))
 }
 
 export const updateApplicationStatus = async (
   id: string,
   statusInput: unknown
 ): Promise<{ id: string; status: ApplicationRequestStatus; updated_at: string }> => {
-  const existing = await getDocument(COLLECTION, id) as { status?: string } | null
+  const existing = await getJobApplicationById(id)
   const prevStatus = existing?.status
 
   const status = normalizeStatus(statusInput)
   if (!status) throw new Error('Invalid status')
 
-  const updated_at = new Date().toISOString()
+  const result = await updateJobApplication(id, { status })
+  if (!result) throw new Error('Application not found')
 
-  const result = await updateDocument(COLLECTION, id, { status, updated_at })
-  if(result.id)
-    await syncNotificationCountOnStatusChange('applications', prevStatus, status)
+  await syncNotificationCountOnStatusChange('applications', toSafeCorrespondenceStatus(prevStatus), status)
 
-
-  return result as { id: string; status: ApplicationRequestStatus; updated_at: string }
+  return {
+    id: result.id,
+    status: result.status as ApplicationRequestStatus,
+    updated_at: result.updated_at.toISOString()
+  }
 }
 
 export const updateApplicationTags = async (
   id: string,
   tags: string[]
 ): Promise<{ id: string; tags: string[]; updated_at: string }> => {
-  const updated_at = new Date().toISOString()
   const uniq = [...new Set((tags || []).map(t => String(t).trim()).filter(Boolean))]
-  const result = await updateDocument(COLLECTION, id, { tags: uniq, updated_at })
-  return result as { id: string; tags: string[]; updated_at: string }
+  const result = await updateJobApplication(id, { tags: uniq })
+  if (!result) throw new Error('Application not found')
+
+  return {
+    id: result.id,
+    tags: result.tags,
+    updated_at: result.updated_at.toISOString()
+  }
 }
 
 export const deleteApplication = async (id: string): Promise<void> => {
-  await deleteDocument(COLLECTION, id)
+  const existing = await getJobApplicationById(id);
+  const currentStatus = toSafeCorrespondenceStatus(existing?.status);;
+
+  const deleted = await deleteJobApplication(id)
+  if (!deleted) throw new Error('Application not found')
+    
+  await syncNotificationCountOnDelete('applications', currentStatus)
 }
 
-// ✅ PDF: single
 export const createApplicationPacketPDFById = async (id: string): Promise<Buffer> => {
   try {
     const application = await getApplicationById(id)
-
-    if (!application) {
-      throw new Error('Application not found')
-    }
-
-    const pdfBuffer = await ApplicationPacketPDFGenerator.createPacketPDF(application)
-    return pdfBuffer
+    return await ApplicationPacketPDFGenerator.createPacketPDF(application)
   } catch (error) {
     throw new Error(`Failed to create application packet PDF: ${(error as Error).message}`)
   }
 }
 
-// ✅ PDF: bulk zip
 export const createApplicationPacketPDFBulk = async (ids: string[]): Promise<Buffer> => {
   try {
     const pdfFiles: PDFFile[] = []
@@ -220,10 +294,10 @@ export const createApplicationPacketPDFBulk = async (ids: string[]): Promise<Buf
 
       const pdfBuffer = await ApplicationPacketPDFGenerator.createPacketPDF(application)
 
-      const first = application.personal?.firstName || application.first_name || ''
-      const last = application.personal?.lastName || application.last_name || ''
+      const first = application.personal?.firstName || ''
+      const last = application.personal?.lastName || ''
       const fullName = `${first} ${last}`.trim() || 'applicant'
-      const filename = `application-${fullName.replace(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
+      const filename = `application-${fullName.replaceAll(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
 
       pdfFiles.push({ buffer: pdfBuffer, filename })
     }
@@ -232,8 +306,7 @@ export const createApplicationPacketPDFBulk = async (ids: string[]): Promise<Buf
       throw new Error('No valid applications found for the provided IDs')
     }
 
-    const zipBuffer = await Zippper.createPDFZip(pdfFiles)
-    return zipBuffer
+    return await Zippper.createPDFZip(pdfFiles)
   } catch (error) {
     throw new Error(`Failed to create bulk application packet PDFs: ${(error as Error).message}`)
   }

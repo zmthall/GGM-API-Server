@@ -1,4 +1,4 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 import {
   cryptoConfig, CRYPTO_ALGO, CRYPTO_IV_LEN, CRYPTO_TAG_LEN,
 } from '../config/crypto'
@@ -11,6 +11,7 @@ import type {
 import { ContactFormData } from '../types/contactForm'
 import { RideRequestData } from '../types/rideRequest'
 import type { ApplicationData, ApplicationDocument, FileData } from '../types/application'
+import { toSafeString } from '../helpers/safe'
 
 export function makeCryptoService(cfg: CryptoConfig): CryptoSvc {
   const keyring = [cfg.current, ...cfg.retired]
@@ -110,7 +111,11 @@ export function makeCryptoService(cfg: CryptoConfig): CryptoSvc {
     return contactDataArr.map(contact => decryptContact(contact, aad))
   }
 
-  const toStr = (v: unknown) => (v === null || v === undefined ? '' : typeof v === 'string' ? v : String(v))
+  const toStr = (v: unknown) => {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string') return v;
+    return toSafeString(v);
+  }
 
   const encryptFileData = (file: FileData, aad?: string): FileData => {
     if (!file) return file

@@ -5,6 +5,8 @@ export type CorrespondenceStatus =
   | "new"
   | "reviewing"
   | "scheduled"
+  | "completed"
+  | "declined"
   | "spam"
   | "closed"
   | "interviewed"

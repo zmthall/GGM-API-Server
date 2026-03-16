@@ -4,9 +4,6 @@ import { getCommunityImages, getCommunityManifest, rebuildCommunityManifest } fr
 
 const router = Router();
 
-// Middleware
-// import { authenticateKey } from '../middlewares/authenticateKey';
-
 router.post('/images/rebuild-manifest', rebuildCommunityManifest);
 router.get('/images/manifest', getCommunityManifest)
 router.get('/images', getCommunityImages);

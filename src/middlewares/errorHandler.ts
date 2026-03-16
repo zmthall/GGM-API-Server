@@ -15,6 +15,4 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     message: 'Unexpected error',
     error: err.message || 'Unknown error',
   });
-
-  return;
 };

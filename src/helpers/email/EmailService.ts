@@ -24,11 +24,11 @@ export class EmailService {
     }
 
     // Check for undefined values in text content
-    if (message.text && message.text.includes('undefined')) {
+    if (message.text?.includes('undefined')) {
       throw new Error('Email text contains undefined fields');
     }
 
-    if (message.html && message.html.includes('undefined')) {
+    if (message.html?.includes('undefined')) {
       throw new Error('Email HTML contains undefined fields');
     }
   }

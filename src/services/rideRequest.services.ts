@@ -6,7 +6,7 @@ import type { PaginatedResult, PaginationOptions } from '../types/pagination'
 import type { PDFFile } from '../types/PDF'
 import { cryptoService } from './crypto.services'
 import * as EmailService from './email.services'
-import { increaseNotificationCount, syncNotificationCountOnStatusChange } from './notification.services'
+import { increaseNotificationCount, syncNotificationCountOnDelete, syncNotificationCountOnStatusChange } from './notification.services'
 import { NOTIFICATION_TYPE_BY_COLLECTION } from '../config/notification'
 import {
   createRideRequest,
@@ -15,6 +15,7 @@ import {
   listRideRequests,
   updateRideRequest
 } from '../helpers/database/rideRequests/rideRequests.db'
+import { toSafeCorrespondenceStatus } from '../helpers/safe'
 
 const COLLECTION = 'ride_requests'
 
@@ -249,7 +250,7 @@ export const updateRideRequestStatus = async (
       throw new Error('Ride request not found')
     }
 
-    await syncNotificationCountOnStatusChange('ride_requests', prevStatus, status)
+    await syncNotificationCountOnStatusChange('ride_requests', toSafeCorrespondenceStatus(prevStatus), status)
 
     return {
       id: result.id,
@@ -294,10 +295,15 @@ export const updateRideRequestTags = async (
 
 export const deleteRideRequest = async (id: string): Promise<void> => {
   try {
+    const existing = await getRideRequestById(id)
+    const currentStatus = toSafeCorrespondenceStatus(existing?.status)
+
     const deleted = await deleteRideRequestRecord(id)
     if (!deleted) {
       throw new Error('Ride request not found')
     }
+
+    await syncNotificationCountOnDelete('ride_requests', toSafeCorrespondenceStatus(currentStatus))
   } catch (error) {
     throw new Error(`Failed to delete ride request: ${(error as Error).message}`)
   }
@@ -319,7 +325,7 @@ export const createRideRequestPDFBulk = async (ids: string[]): Promise<Buffer> =
     for (const id of ids) {
       const rideRequest = await getRideRequestById(id)
       const pdfBuffer = await RideRequestPDFGenerator.createSinglePDF(rideRequest)
-      const filename = `ride-request-${rideRequest.name.replace(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
+      const filename = `ride-request-${rideRequest.name.replaceAll(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
 
       pdfFiles.push({
         buffer: pdfBuffer,

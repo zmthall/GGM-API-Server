@@ -40,8 +40,8 @@ export const createMultipleLeads = async (req: Request, res: Response) => {
 export const getLeads = async (req: Request, res: Response) => {
   try {
     // Read both page and limit/pageSize parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 10;
 
     const result = await leadService.getAllLeads({ page, pageSize });
     
@@ -64,8 +64,8 @@ export const getLeadsByDate = async (req: Request, res: Response) => {
     const { date } = req.params;
     
     // Read pagination parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 10;
 
     const result = await leadService.getLeadsByDate(date, {}, { page, pageSize });
     
@@ -87,8 +87,8 @@ export const getLeadsByDateRange = async (req: Request, res: Response) => {
     const { startDate, endDate } = req.params;
     
     // Read pagination parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 10;
 
     const result = await leadService.getLeadsByDateRange({startDate, endDate}, {}, { page, pageSize });
     
@@ -110,8 +110,8 @@ export const getLeadsByStatus = async (req: Request, res: Response) => {
     const { status } = req.params;
     
     // Read pagination parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 10;
 
     const result = await leadService.getLeadsByStatus({status: status}, { page, pageSize });
     
@@ -130,8 +130,8 @@ export const getLeadsByStatus = async (req: Request, res: Response) => {
 
 export const getLeadsByFilters = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 10;
 
     // Remove pagination params from filters
     const { page: _, limit: __, pageSize: ___, ...filters } = req.query;
@@ -269,8 +269,8 @@ export const searchLeads = async (req: Request, res: Response) => {
     }
 
     // Read pagination parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.limit as string) || parseInt(req.query.pageSize as string) || 10;
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const pageSize = Number.parseInt(req.query.limit as string) || Number.parseInt(req.query.pageSize as string) || 10;
 
     // Extract date filters
     const dateFilters: Record<string, string> = {};
@@ -368,7 +368,7 @@ export const createLeadPDFById = async (req: Request, res: Response) => {
     // Get lead name for filename (optional - could just use ID)
     const lead = await leadService.getLeadById(id);
     const filename = lead 
-      ? `lead-${lead.name.replace(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
+      ? `lead-${lead.name.replaceAll(/\s+/g, '-').toLowerCase()}-${id.substring(0, 8)}.pdf`
       : `lead-${id.substring(0, 8)}.pdf`;
     
     res.setHeader('Content-Type', 'application/pdf');
@@ -424,7 +424,7 @@ export const createLeadPDFByDateRange = async (req: Request, res: Response) => {
 
     const pdfBuffer = await leadService.createLeadPDFByDateRange(startDate, endDate);
     
-    const filename = `leads-report-${startDate.replace(/\//g, '-')}-to-${endDate.replace(/\//g, '-')}.pdf`;
+    const filename = `leads-report-${startDate.replaceAll('/', '-')}-to-${endDate.replaceAll('/', '-')}.pdf`;
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -461,7 +461,7 @@ export const createLeadPDFByDate = async (req: Request, res: Response) => {
 
     const pdfBuffer = await leadService.createLeadPDFByDate(date);
     
-    const filename = `leads-report-${date.replace(/\//g, '-')}.pdf`;
+    const filename = `leads-report-${date.replaceAll('/', '-')}.pdf`;
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

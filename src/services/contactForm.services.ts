@@ -6,7 +6,7 @@ import { PaginatedResult, PaginationOptions } from '../types/pagination'
 import { PDFFile } from '../types/PDF'
 import { cryptoService } from './crypto.services'
 import * as EmailService from '../services/email.services'
-import { increaseNotificationCount, syncNotificationCountOnStatusChange } from './notification.services'
+import { increaseNotificationCount, syncNotificationCountOnDelete, syncNotificationCountOnStatusChange } from './notification.services'
 import { NOTIFICATION_TYPE_BY_COLLECTION } from '../config/notification'
 import {
   createContactMessage,
@@ -15,6 +15,7 @@ import {
   listContactMessages,
   updateContactMessage
 } from '../helpers/database/contactMessages/contactMessages.db'
+import { toSafeCorrespondenceStatus } from '../helpers/safe'
 
 const COLLECTION = 'contact_messages'
 
@@ -100,7 +101,7 @@ export const submitContactForm = async (contactData: ContactFormData) => {
     emailSuccess: boolean
     documentId: string | undefined
     messageId: string | undefined
-    emailError?: string | undefined
+    emailError?: string
   } = {
     success: true,
     emailSuccess: false,
@@ -151,7 +152,7 @@ export const submitContactForm = async (contactData: ContactFormData) => {
 
   try {
     if (results.documentId) {
-      const updated = results.messageId !== ''
+      const updated = results.messageId
         ? {
             emailStatus: 'email_sent',
             emailSentAt: new Date(),
@@ -279,7 +280,7 @@ export const updateContactFormStatus = async (
       throw new Error('Contact form not found')
     }
 
-    await syncNotificationCountOnStatusChange('messages', prevStatus, status)
+    await syncNotificationCountOnStatusChange('messages', toSafeCorrespondenceStatus(prevStatus), status)
 
     return {
       id: result.id,
@@ -324,10 +325,15 @@ export const updateContactFormTags = async (
 
 export const deleteContactForm = async (id: string): Promise<void> => {
   try {
+    const existing = await getContactMessageById(id)
+    const currentStatus = toSafeCorrespondenceStatus(existing?.status);
+
     const deleted = await deleteContactMessage(id)
     if (!deleted) {
       throw new Error('Contact form not found')
     }
+
+    await syncNotificationCountOnDelete('messages', currentStatus)
   } catch (error) {
     throw new Error(`Failed to delete contact form: ${(error as Error).message}`)
   }

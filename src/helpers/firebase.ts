@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { PaginatedResult, PaginationOptions } from '../types/pagination';
 import { Lead } from '../types/lead';
 import type { ApplicationRequestStatus } from '../types/application' // ✅ add this import at the top with the others
+import { toSafeString } from './safe';
 
 export const createDocument = async <T extends Record<string, any>>(
   collectionName: string, 
@@ -119,65 +120,71 @@ export const getPaginatedDocuments = async <T>(
     })) as T[];
 
     // Sort in JavaScript
-    const sortedDocs = allDocs.sort((a, b) => {
-      const fieldA = (a as any)[orderField];
-      const fieldB = (b as any)[orderField];
-      
-      // Handle different data types
-      let valueA, valueB;
-      
-      if (fieldA instanceof Date) {
-        valueA = fieldA.getTime();
-      } else if (typeof fieldA === 'string') {
-        // Try to parse as date if it looks like an ISO string
-        const dateA = new Date(fieldA);
-        valueA = isNaN(dateA.getTime()) ? fieldA : dateA.getTime();
-      } else {
-        valueA = fieldA;
-      }
-      
-      if (fieldB instanceof Date) {
-        valueB = fieldB.getTime();
-      } else if (typeof fieldB === 'string') {
-        // Try to parse as date if it looks like an ISO string
-        const dateB = new Date(fieldB);
-        valueB = isNaN(dateB.getTime()) ? fieldB : dateB.getTime();
-      } else {
-        valueB = fieldB;
-      }
+    const sortedDocs = allDocs
 
-      if (orderDirection === 'asc') {
-        return valueA > valueB ? 1 : -1;
-      } else {
-        return valueA < valueB ? 1 : -1;
-      }
-    });
+    const normalizeSortableValue = (value: unknown): string | number => {
+    if (value instanceof Date) {
+      return value.getTime()
+    }
 
-    // Apply pagination
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const pageData = sortedDocs.slice(startIndex, endIndex);
-    
-    // CORRECT logic: Check if there are more documents beyond this page
-    const hasNextPage = endIndex < sortedDocs.length;
-    const hasPreviousPage = page > 1;
+    if (typeof value === 'string') {
+      const parsed = new Date(value)
+      return Number.isNaN(parsed.getTime()) ? value : parsed.getTime()
+    }
 
-    return {
-      data: pageData,
-      pagination: {
-        currentPage: page,
-        pageSize,
-        hasNextPage,
-        hasPreviousPage,
-        totalPages: Math.ceil(sortedDocs.length / pageSize),
-        totalItems: sortedDocs.length
-      }
-    };
-  } catch (error) {
-    console.error('Pagination error:', error);
-    throw new Error(`Failed to fetch paginated documents: ${(error as Error).message}`);
+    if (typeof value === 'number') {
+      return value
+    }
+
+    if (typeof value === 'boolean') {
+      return value ? 1 : 0
+    }
+
+    return toSafeString(value ?? '')
   }
-};
+
+  const compareValues = (a: string | number, b: string | number, dir: 'asc' | 'desc') => {
+    if (a === b) return 0
+
+    if (dir === 'asc') {
+      return a > b ? 1 : -1
+    }
+
+    return a < b ? 1 : -1
+  }
+
+  sortedDocs.sort((a, b) => {
+    const valueA = normalizeSortableValue((a as any)[orderField])
+    const valueB = normalizeSortableValue((b as any)[orderField])
+
+    return compareValues(valueA, valueB, orderDirection)
+  })
+
+      // Apply pagination
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const pageData = sortedDocs.slice(startIndex, endIndex);
+      
+      // CORRECT logic: Check if there are more documents beyond this page
+      const hasNextPage = endIndex < sortedDocs.length;
+      const hasPreviousPage = page > 1;
+
+      return {
+        data: pageData,
+        pagination: {
+          currentPage: page,
+          pageSize,
+          hasNextPage,
+          hasPreviousPage,
+          totalPages: Math.ceil(sortedDocs.length / pageSize),
+          totalItems: sortedDocs.length
+        }
+      };
+    } catch (error) {
+      console.error('Pagination error:', error);
+      throw new Error(`Failed to fetch paginated documents: ${(error as Error).message}`);
+    }
+  };
 
 export const getDocumentsByDateRange = async <T = Record<string, any>>(
   collectionName: string,
@@ -402,7 +409,7 @@ export const saveApplicationData = async <T extends Record<string, any>>(
   options: {
     contact_type?: string;
     tags?: string[];
-    status?: ApplicationRequestStatus | string;
+    status?: ApplicationRequestStatus;
     position?: string;
     additionalFields?: Record<string, any>;
   } = {}
@@ -517,11 +524,11 @@ export const processDateFilters = async (dateFilters: Record<string, string>) =>
     
     if (key.includes('_from')) {
       // Start of day
-      const startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0, 0));
+      const startDate = new Date(Date.UTC(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day), 0, 0, 0, 0));
       processed[key] = startDate.toISOString();
     } else if (key.includes('_to')) {
       // End of day
-      const endDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 23, 59, 59, 999));
+      const endDate = new Date(Date.UTC(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day), 23, 59, 59, 999));
       processed[key] = endDate.toISOString();
     }
   }

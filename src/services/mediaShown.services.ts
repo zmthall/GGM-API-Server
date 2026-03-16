@@ -1,11 +1,11 @@
 // /services/mediaShown.services.ts
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import mime from 'mime'
 import { FULL_BASE_URL } from '../config/url';
 
 const SHOWN_DIR = path.resolve('uploads/community/shown');
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
 // Make sure directory exists
 export const ensureShownDir = () => {
@@ -22,7 +22,7 @@ export const getSlotMap = () => {
   const slotMap = [];
 
   for (let i = 0; i <= 7; i++) {
-    const file = files.find(f => f.startsWith(`${i}.`) && ALLOWED_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+    const file = files.find(f => f.startsWith(`${i}.`) && ALLOWED_EXTENSIONS.has(path.extname(f).toLowerCase()));
     const altPath = path.join(SHOWN_DIR, `${i}.json`);
 
     let alt = null;
@@ -55,7 +55,7 @@ function findSlotFile(slot: number | string) {
   ensureShownDir()
   const files = fs.readdirSync(SHOWN_DIR)
   const file = files.find(
-    f => f.startsWith(`${slot}.`) && ALLOWED_EXTENSIONS.includes(path.extname(f).toLowerCase())
+    f => f.startsWith(`${slot}.`) && ALLOWED_EXTENSIONS.has(path.extname(f).toLowerCase())
   )
   if (!file) throw new Error(`No image found for slot ${slot}`)
   return path.join(SHOWN_DIR, file)
@@ -101,7 +101,7 @@ export function getSlotImage(slot: number | string) {
 // PUT - Update image at specific slot
 export const replaceShownImageAtSlot = (slot: number | string, file: Express.Multer.File, alt = null) => {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
     fs.unlinkSync(file.path); // cleanup temp file
     throw new Error('Invalid file type');
   }
@@ -137,7 +137,7 @@ export const deleteShownImage = (slot: number | string) => {
   ensureShownDir();
 
   const files = fs.readdirSync(SHOWN_DIR);
-  const imageFile = files.find(f => f.startsWith(`${slot}.`) && ALLOWED_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+  const imageFile = files.find(f => f.startsWith(`${slot}.`) && ALLOWED_EXTENSIONS.has(path.extname(f).toLowerCase()));
   const altFile = `${slot}.json`;
 
   if (!imageFile && !fs.existsSync(path.join(SHOWN_DIR, altFile))) {
@@ -165,7 +165,7 @@ export const deleteAllShownImages = () => {
 
     // Only delete allowed image extensions or .json files
     if (
-      ALLOWED_EXTENSIONS.includes(path.extname(file).toLowerCase()) ||
+      ALLOWED_EXTENSIONS.has(path.extname(file).toLowerCase()) ||
       file.endsWith('.json')
     ) {
       fs.unlinkSync(fullPath);

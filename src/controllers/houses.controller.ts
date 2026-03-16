@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as housesService from '../services/houses.services';
-import { buildBigManifest, readBigManifest, saveBigManifest, buildHouseBlock } from '../helpers/houses/galleryManifest' 
+import { buildBigManifest, readBigManifest, saveBigManifest } from '../helpers/houses/galleryManifest' 
 
 export const getHouseImages = async (req: Request, res: Response) => {
   const { houseId } = req.params

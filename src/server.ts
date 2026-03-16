@@ -1,7 +1,7 @@
 import app from './app'
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import logger from './logger';
 
 const uploadDir = path.resolve('uploads');
@@ -10,7 +10,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const STATUS = process.env.STATUS || 'prod'
-const PORT = parseInt(process.env.PORT || '4000', 10)
+const PORT = Number.parseInt(process.env.PORT || '4000', 10)
 
 if (STATUS === 'dev') {
   app.listen(PORT, '127.0.0.1', () => {

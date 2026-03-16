@@ -2,8 +2,6 @@ import PDFDocument from "pdfkit";
 import { ContactFormDocument, ContactFormStatus } from "../../types/contactForm";
 
 export class ContactFormPDFGenerator {
-  static addedReviewedLine = false;
-
   static createSinglePDF(
     contactFormDocument: ContactFormDocument
   ): Promise<Buffer> {
@@ -12,33 +10,27 @@ export class ContactFormPDFGenerator {
         const doc = new PDFDocument({
           size: "A4",
           margins: { top: 50, bottom: 50, left: 50, right: 50 },
-        });
+        })
 
-        // Collect PDF data in buffer
-        const chunks: Buffer[] = [];
+        const chunks: Buffer[] = []
+        let addedReviewedLine = false
 
-        doc.on("data", (chunk) => chunks.push(chunk));
+        doc.on("data", (chunk) => chunks.push(chunk))
         doc.on("end", () => {
-          resolve(Buffer.concat(chunks));
-        });
-        doc.on("error", reject);
+          resolve(Buffer.concat(chunks))
+        })
+        doc.on("error", reject)
 
-        // Add content
-        this.addSingleContactHeader(doc, contactFormDocument);
+        this.addSingleContactHeader(doc, contactFormDocument)
+        this.addContactFormDetails(doc, contactFormDocument)
+        addedReviewedLine = this.addMessageSection(doc, contactFormDocument, addedReviewedLine)
+        this.addSingleContactFormFooter(doc, contactFormDocument, addedReviewedLine)
 
-        this.addContactFormDetails(doc, contactFormDocument);
-
-        this.addMessageSection(doc, contactFormDocument);
-
-        this.addSingleContactFormFooter(doc, contactFormDocument, );
-
-        // End the document - this triggers the 'end' event
-        doc.end();
-        this.addedReviewedLine = false;
+        doc.end()
       } catch (error) {
-        reject(error);
+        reject(error)
       }
-    });
+    })
   }
 
   private static addSingleContactHeader(
@@ -182,64 +174,58 @@ export class ContactFormPDFGenerator {
 
   private static addMessageSection(
     doc: PDFKit.PDFDocument,
-    contactFormDocument: ContactFormDocument
-  ): void {
-    const left = 50;
-    const boxWidth = 495;
-    const pad = 10;
-    const gapBeforeTitle = 20;
-    const titleToBoxGap = 35;
+    contactFormDocument: ContactFormDocument,
+    addedReviewedLine: boolean
+  ): boolean {
+    const left = 50
+    const boxWidth = 495
+    const pad = 10
+    const gapBeforeTitle = 20
+    const titleToBoxGap = 35
 
-    const footerTopY = doc.page.height - 75; // where your footer line is
-    const pageTop = () => doc.page.margins.top;
-    const pageBottomLimit = () => footerTopY - 8; // small guard gap
+    const footerTopY = doc.page.height - 75
+    const pageTop = () => doc.page.margins.top
+    const pageBottomLimit = () => footerTopY - 8
 
-    // Position title
-    let y = doc.y + gapBeforeTitle;
+    let y = doc.y + gapBeforeTitle
     if (y + 20 > pageBottomLimit()) {
-      this.addSingleContactFormFooter(doc, contactFormDocument);
-      doc.addPage();
-      y = pageTop();
+      addedReviewedLine = this.addSingleContactFormFooter(doc, contactFormDocument, addedReviewedLine)
+      doc.addPage()
+      y = pageTop()
     }
 
     doc
       .fontSize(16)
       .fillColor('#2c3e50')
       .font('Helvetica-Bold')
-      .text('Message', left, y);
+      .text('Message', left, y)
 
-    y += titleToBoxGap;
+    y += titleToBoxGap
 
-    // Prepare message font
-    doc.font('Helvetica').fontSize(11).fillColor('#2c3e50');
-    const full = (contactFormDocument.message ?? '').trim();
+    doc.font('Helvetica').fontSize(11).fillColor('#2c3e50')
+    let text = (contactFormDocument.message ?? '').trim()
 
-    // Instead of slicing chars, just let PDFKit paginate
-    // by restricting text height to remaining space.
-    let text = full;
     while (text.length > 0) {
-      const avail = pageBottomLimit() - y - pad * 2;
+      const avail = pageBottomLimit() - y - pad * 2
 
       if (avail < doc.currentLineHeight()) {
-        this.addSingleContactFormFooter(doc, contactFormDocument);
-        doc.addPage();
-        y = pageTop();
-        continue;
+        addedReviewedLine = this.addSingleContactFormFooter(doc, contactFormDocument, addedReviewedLine)
+        doc.addPage()
+        y = pageTop()
+        continue
       }
 
-      // measure how much fits
-      // when fitting text:
-      const opts = { width: boxWidth - pad * 2, align: 'left' as const, height: avail };
-      doc.font('Helvetica').fontSize(11).fillColor('#2c3e50');
+      const opts = { width: boxWidth - pad * 2, align: 'left' as const, height: avail }
+      doc.font('Helvetica').fontSize(11).fillColor('#2c3e50')
+
       const fitted = doc.heightOfString(text, opts) > avail
-        ? this.truncateText(doc, text, opts)   // <-- call your helper here
-        : text;
+        ? this.truncateText(doc, text, opts)
+        : text
 
-      const h = doc.heightOfString(fitted, opts);
-      const boxHeight = h + pad * 2;
+      const h = doc.heightOfString(fitted, opts)
+      const boxHeight = h + pad * 2
 
-      // background
-      doc.save();
+      doc.save()
       doc
         .lineWidth(0.5)
         .fillColor('#f8f9fa')
@@ -247,23 +233,23 @@ export class ContactFormPDFGenerator {
         .fill()
         .strokeColor('#d9dee3')
         .rect(left, y, boxWidth, boxHeight)
-        .stroke();
-      doc.restore();
+        .stroke()
+      doc.restore()
 
-      // text
-      doc.text(fitted, left + pad, y + pad, opts);
+      doc.text(fitted, left + pad, y + pad, opts)
 
-      y += boxHeight + 4;
-      text = text.slice(fitted.length).trimStart();
+      y += boxHeight + 4
+      text = text.slice(fitted.length).trimStart()
 
       if (text.length > 0 && (pageBottomLimit() - y) < doc.currentLineHeight()) {
-        this.addSingleContactFormFooter(doc, contactFormDocument);
-        doc.addPage();
-        y = pageTop();
+        addedReviewedLine = this.addSingleContactFormFooter(doc, contactFormDocument, addedReviewedLine)
+        doc.addPage()
+        y = pageTop()
       }
     }
 
-    doc.y = y;
+    doc.y = y
+    return addedReviewedLine
   }
 
   // crude helper: just find largest substring that heightOfString <= avail
@@ -292,47 +278,46 @@ export class ContactFormPDFGenerator {
 
   private static addSingleContactFormFooter(
     doc: PDFKit.PDFDocument,
-    contactFormDocument: ContactFormDocument
-  ): void {
+    contactFormDocument: ContactFormDocument,
+    addedReviewedLine: boolean
+  ): boolean {
     doc
       .strokeColor("#bdc3c7")
       .lineWidth(1)
       .moveTo(50, doc.page.height - 75)
       .lineTo(545, doc.page.height - 75)
-      .stroke();
+      .stroke()
 
-    // Page footer information
-    const footerY = doc.page.height - 60;
-    
-    // Left: Patient name
+    const footerY = doc.page.height - 60
+
     doc
       .fontSize(8)
       .fillColor("#7f8c8d")
-      .text(`${contactFormDocument.first_name} ${contactFormDocument.last_name}`, 50, footerY, { align: "left" });
+      .text(`${contactFormDocument.first_name} ${contactFormDocument.last_name}`, 50, footerY, {
+        align: "left"
+      })
 
-    // Center: Reviewed By line
-    if(!this.addedReviewedLine) {
+    if (!addedReviewedLine) {
       doc
         .fontSize(8)
         .fillColor("#7f8c8d")
         .text("Reviewed By: _______________", 0, footerY, {
           align: "center",
           width: doc.page.width,
-        });
+        })
 
-      this.addedReviewedLine = true;
+      addedReviewedLine = true
     }
 
-    
-
-    // Right: System name
     doc
       .fontSize(8)
       .fillColor("#7f8c8d")
       .text("Contact Form Management System", 0, footerY, {
         align: "right",
         width: doc.page.width - 50,
-      });
+      })
+
+    return addedReviewedLine
   }
 
   private static getStatusColor(contactFormStatus: ContactFormStatus): string {

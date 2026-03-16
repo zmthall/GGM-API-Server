@@ -1,4 +1,5 @@
 import { getAllDocuments } from '../../../../helpers/firebase'
+import { toSafeString } from '../../../safe'
 import { upsertUser } from '../../users/users.db'
 import type { MigrationResult } from '../shared/migration.types'
 
@@ -22,7 +23,7 @@ const FIRESTORE_COLLECTION = 'users'
 
 const toDateOrNull = (value: unknown): Date | null => {
   if (!value) return null
-  const parsed = new Date(String(value))
+  const parsed = new Date(toSafeString(value))
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 

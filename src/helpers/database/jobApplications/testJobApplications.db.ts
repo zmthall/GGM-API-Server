@@ -59,10 +59,6 @@ const run = async (): Promise<void> => {
         otherExplain: 'encrypted-other-explain',
         preferablePayRate: 'encrypted-pay-rate',
         willingToWorkOvertime: 'encrypted-overtime'
-      },
-      resumePayload: {
-        filename: 'encrypted-resume-filename',
-        url: 'encrypted-resume-url'
       }
     })
 

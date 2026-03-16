@@ -1,9 +1,10 @@
 import { Request, Response } from 'express'
 import * as notificationService from '../services/notification.services'
 import { CorrespondenceType } from '../types/notification'
+import { toSafeString } from '../helpers/safe'
 
 const resolveType = (raw: unknown): CorrespondenceType | null => {
-  const v = String(raw ?? '').trim().toLowerCase()
+  const v = toSafeString(raw ?? '').trim().toLowerCase()
 
   // Accept BOTH canonical notification types and collection names
   if (v === 'ride_requests') return 'ride_requests'
