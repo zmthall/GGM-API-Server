@@ -30,6 +30,7 @@ import community from './routes/communityImages.routes'
 import crypto from './routes/crypto.routes'
 import verify from './routes/verify.routes'
 import blogCalendar from './routes/blogCalendar.routes'
+import blogPosts from './routes/blogPosts.routes'
 import notifications from './routes/notification.routes'
 
 import { errorHandler } from './middlewares/errorHandler';
@@ -100,6 +101,7 @@ app.use('/api/community', community)
 app.use('/api/crypto', crypto)
 app.use('/api/verify', verify)
 app.use('/api/calendar', blogCalendar)
+app.use('/api/blog-posts', blogPosts)
 app.use('/api/notification', notifications)
 
 app.get('/', (req, res) => {
