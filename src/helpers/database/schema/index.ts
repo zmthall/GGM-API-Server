@@ -7,7 +7,7 @@ import { jobDescriptionsSchema } from './jobDescriptions/jobDescriptions.schema'
 import { rideRequestsSchema } from './rideRequests/rideRequests.schema'
 import type { DatabaseSchemaModule } from './schema.types'
 import { jobApplicationsSchema } from './jobApplications/jobApplications.schema'
-import { blogPostsSchema } from './blogPosts/blogPosts.scheme'
+import { blogPostsSchema } from './blogPosts/blogPosts.schema'
 
 export const databaseSchemaModules: DatabaseSchemaModule[] = [
   correspondenceCountsSchema,
@@ -30,4 +30,4 @@ export * from './events/events.schema'
 export * from './contactMessages/contactMessages.schema'
 export * from './rideRequests/rideRequests.schema'
 export * from './jobApplications/jobApplications.schema'
-export * from './blogPosts/blogPosts.scheme'
+export * from './blogPosts/blogPosts.schema'
