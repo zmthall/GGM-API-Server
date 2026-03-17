@@ -541,7 +541,7 @@ export const blogPostsController = {
     }
   },
 
-    async fetchAll(req: Request, res: Response): Promise<void> {
+  async fetchAll(req: Request, res: Response): Promise<void> {
     try {
       const posts = await blogPostsService.fetchAll(parseListOptions(req))
 
@@ -560,11 +560,13 @@ export const blogPostsController = {
 
   async fetchAllPublished(req: Request, res: Response): Promise<void> {
     try {
-      const posts = await blogPostsService.fetchAllPublished()
+      const posts = await blogPostsService.listPublishedCardsPaginated(parseListOptions(req))
+
 
       res.status(200).json({
         success: true,
-        data: posts
+        data: posts.data,
+        pagination: posts.pagination
       })
     } catch (error) {
       res.status(500).json({
@@ -646,11 +648,12 @@ export const blogPostsController = {
 
   async listPublished(req: Request, res: Response): Promise<void> {
     try {
-      const posts = await blogPostsService.listPublished()
+      const result = await blogPostsService.listPublishedCardsPaginated(parseListOptions(req))
 
       res.status(200).json({
         success: true,
-        data: posts
+        data: result.data,
+        pagination: result.pagination
       })
     } catch (error) {
       res.status(500).json({

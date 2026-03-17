@@ -5,6 +5,14 @@ export type BlogPostOrderField =
   | 'title'
   | 'read_time'
 
+export type BlogPostSelectPreset =
+  | 'full'
+  | 'card'
+  | 'preview'
+  | 'slugOnly'
+  | 'seo'
+  | 'tiny'
+
 export interface PaginationOptions {
   page?: number
   pageSize?: number
@@ -12,21 +20,23 @@ export interface PaginationOptions {
   orderDirection?: 'asc' | 'desc'
 }
 
-export interface PaginationMeta {
-  currentPage: number
-  pageSize: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-  totalPages?: number
-  totalItems?: number
+export interface ListBlogPostsOptions extends PaginationOptions {
+  publishedOnly?: boolean
+  draftOnly?: boolean
+  featuredOnly?: boolean
+  staffPickOnly?: boolean
+  tag?: string
+  author?: string
+  search?: string
+  createdAfter?: Date
+  createdBefore?: Date
+  publishedAfter?: Date
+  publishedBefore?: Date
+  limit?: number
+  select?: BlogPostSelectPreset
 }
 
-export interface PaginatedResult<T> {
-  data: T[]
-  pagination: PaginationMeta
-}
-
-export interface BlogPostRecord {
+export interface BlogPostFullRecord {
   id: string
   slug: string
   title: string
@@ -50,6 +60,71 @@ export interface BlogPostRecord {
   canonical_url: string
   created_at: Date
   updated_at: Date
+}
+
+export interface BlogPostCardRecord {
+  id: string
+  slug: string
+  title: string
+  summary: string
+  tags: string[]
+  thumbnail: string
+  thumbnail_alt: string
+  thumbnail_width: number | null
+  thumbnail_height: number | null
+  featured: boolean
+  staff_pick: boolean
+  read_time: number
+  publish_timestamp: Date | null
+}
+
+export interface BlogPostPreviewRecord {
+  id: string
+  slug: string
+  title: string
+  summary: string
+  thumbnail: string
+  thumbnail_alt: string
+  thumbnail_width: number | null
+  thumbnail_height: number | null
+  publish_timestamp: Date | null
+}
+
+export interface BlogPostSeoRecord {
+  id: string
+  slug: string
+  title: string
+  summary: string
+  seo_title: string
+  seo_description: string
+  seo_image: string
+  canonical_url: string
+  publish_timestamp: Date | null
+}
+
+export interface BlogPostTinyRecord {
+  id: string
+  slug: string
+  title: string
+  summary: string
+}
+
+export interface BlogPostSlugRecord {
+  slug: string
+}
+
+export type BlogPostRecord = BlogPostFullRecord
+
+export interface PaginatedResult<T> {
+  data: T[]
+  pagination: {
+    currentPage: number
+    pageSize: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    totalPages: number
+    totalItems: number
+  }
 }
 
 export interface CreateBlogPostInput {
@@ -97,18 +172,4 @@ export interface UpdateBlogPostInput {
   seoDescription?: string
   seoImage?: string
   canonicalUrl?: string
-}
-
-export interface ListBlogPostsOptions extends PaginationOptions {
-  publishedOnly?: boolean
-  draftOnly?: boolean
-  featuredOnly?: boolean
-  staffPickOnly?: boolean
-  tag?: string
-  author?: string
-  search?: string
-  createdAfter?: Date
-  createdBefore?: Date
-  publishedAfter?: Date
-  publishedBefore?: Date
 }

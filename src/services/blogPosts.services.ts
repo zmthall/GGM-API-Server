@@ -1,3 +1,4 @@
+import { list } from 'pdfkit'
 import {
   blogPostExistsById,
   countBlogPosts,
@@ -12,6 +13,7 @@ import {
   listBlogPostsByTag,
   listBlogPostsPaginated,
   listFeaturedBlogPosts,
+  listPublishedBlogCardsPaginated,
   listPublishedBlogPosts,
   listPublishedBlogPostSlugs,
   listStaffPickBlogPosts,
@@ -27,7 +29,9 @@ import {
   updateBlogPost
 } from '../helpers/database/blogPosts/blogPosts.db'
 import type {
+  BlogPostCardRecord,
   BlogPostRecord,
+  BlogPostTinyRecord,
   CreateBlogPostInput,
   ListBlogPostsOptions,
   PaginatedResult,
@@ -99,7 +103,7 @@ export const blogPostsService = {
     return getPublishedBlogPostBySlug(slug)
   },
 
-  async getLatest(): Promise<BlogPostRecord | null> {
+  async getLatest(): Promise<BlogPostCardRecord | null> {
     return getLatestBlogPost()
   },
 
@@ -135,6 +139,12 @@ export const blogPostsService = {
     return listPublishedBlogPosts()
   },
 
+  async listPublishedCardsPaginated(
+    options: ListBlogPostsOptions = {}
+  ): Promise<PaginatedResult<BlogPostCardRecord>> {
+    return listPublishedBlogCardsPaginated(options)
+  },
+
   async listPublishedSlugs(): Promise<string[]> {
     return listPublishedBlogPostSlugs()
   },
@@ -143,7 +153,7 @@ export const blogPostsService = {
     return listFeaturedBlogPosts()
   },
 
-  async listStaffPicks(): Promise<BlogPostRecord[]> {
+  async listStaffPicks(): Promise<BlogPostTinyRecord[]> {
     return listStaffPickBlogPosts()
   },
 

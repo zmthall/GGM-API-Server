@@ -8,8 +8,15 @@ import {
 } from '../../safe'
 
 import type {
+  BlogPostCardRecord,
+  BlogPostFullRecord,
   BlogPostOrderField,
+  BlogPostPreviewRecord,
   BlogPostRecord,
+  BlogPostSelectPreset,
+  BlogPostSeoRecord,
+  BlogPostSlugRecord,
+  BlogPostTinyRecord,
   CreateBlogPostInput,
   ListBlogPostsOptions,
   PaginatedResult,
@@ -27,9 +34,85 @@ const PUBLIC_BLOG_POSTS_WHERE = `
   )
 `
 
+const BLOG_POST_SELECT_MAP: Record<BlogPostSelectPreset, string> = {
+  full: `
+    id,
+    slug,
+    title,
+    summary,
+    content,
+    author,
+    tags,
+    thumbnail,
+    thumbnail_alt,
+    thumbnail_width,
+    thumbnail_height,
+    staff_pick,
+    featured,
+    read_time,
+    draft,
+    published,
+    publish_timestamp,
+    seo_title,
+    seo_description,
+    seo_image,
+    canonical_url,
+    created_at,
+    updated_at
+  `,
+  card: `
+    id,
+    slug,
+    title,
+    summary,
+    tags,
+    thumbnail,
+    thumbnail_alt,
+    thumbnail_width,
+    thumbnail_height,
+    featured,
+    staff_pick,
+    read_time,
+    publish_timestamp
+  `,
+  preview: `
+    id,
+    slug,
+    title,
+    summary,
+    thumbnail,
+    thumbnail_alt,
+    thumbnail_width,
+    thumbnail_height,
+    publish_timestamp
+  `,
+  slugOnly: `
+    slug
+  `,
+  seo: `
+    id,
+    slug,
+    title,
+    summary,
+    seo_title,
+    seo_description,
+    seo_image,
+    canonical_url,
+    publish_timestamp
+  `,
+  tiny: `
+    id,
+    slug,
+    title,
+    summary
+  `
+}
 
+const buildSelectClause = (select: BlogPostSelectPreset = 'full'): string => {
+  return BLOG_POST_SELECT_MAP[select]
+}
 
-const mapRow = (row: Record<string, unknown>): BlogPostRecord => {
+const mapFullRow = (row: Record<string, unknown>): BlogPostFullRecord => {
   return {
     id: toSafeString(row.id),
     slug: toSafeString(row.slug),
@@ -56,6 +139,73 @@ const mapRow = (row: Record<string, unknown>): BlogPostRecord => {
     canonical_url: toSafeString(row.canonical_url),
     created_at: toSafeDate(row.created_at),
     updated_at: toSafeDate(row.updated_at)
+  }
+}
+
+const mapCardRow = (row: Record<string, unknown>): BlogPostCardRecord => {
+  return {
+    id: toSafeString(row.id),
+    slug: toSafeString(row.slug),
+    title: toSafeString(row.title),
+    summary: toSafeString(row.summary),
+    tags: toSafeStringArray(row.tags),
+    thumbnail: toSafeString(row.thumbnail),
+    thumbnail_alt: toSafeString(row.thumbnail_alt),
+    thumbnail_width: row.thumbnail_width == null ? null : Number(row.thumbnail_width),
+    thumbnail_height: row.thumbnail_height == null ? null : Number(row.thumbnail_height),
+    featured: toSafeBoolean(row.featured),
+    staff_pick: toSafeBoolean(row.staff_pick),
+    read_time: Number(row.read_time ?? 0),
+    publish_timestamp: row.publish_timestamp
+      ? toSafeNullableDate(row.publish_timestamp as Date)
+      : null
+  }
+}
+
+const mapPreviewRow = (row: Record<string, unknown>): BlogPostPreviewRecord => {
+  return {
+    id: toSafeString(row.id),
+    slug: toSafeString(row.slug),
+    title: toSafeString(row.title),
+    summary: toSafeString(row.summary),
+    thumbnail: toSafeString(row.thumbnail),
+    thumbnail_alt: toSafeString(row.thumbnail_alt),
+    thumbnail_width: row.thumbnail_width == null ? null : Number(row.thumbnail_width),
+    thumbnail_height: row.thumbnail_height == null ? null : Number(row.thumbnail_height),
+    publish_timestamp: row.publish_timestamp
+      ? toSafeNullableDate(row.publish_timestamp as Date)
+      : null
+  }
+}
+
+const mapSeoRow = (row: Record<string, unknown>): BlogPostSeoRecord => {
+  return {
+    id: toSafeString(row.id),
+    slug: toSafeString(row.slug),
+    title: toSafeString(row.title),
+    summary: toSafeString(row.summary),
+    seo_title: toSafeString(row.seo_title),
+    seo_description: toSafeString(row.seo_description),
+    seo_image: toSafeString(row.seo_image),
+    canonical_url: toSafeString(row.canonical_url),
+    publish_timestamp: row.publish_timestamp
+      ? toSafeNullableDate(row.publish_timestamp as Date)
+      : null
+  }
+}
+
+const mapTinyRow = (row: Record<string, unknown>): BlogPostTinyRecord => {
+  return {
+    id: toSafeString(row.id),
+    slug: toSafeString(row.slug),
+    title: toSafeString(row.title),
+    summary: toSafeString(row.summary)
+  }
+}
+
+const mapSlugRow = (row: Record<string, unknown>): BlogPostSlugRecord => {
+  return {
+    slug: toSafeString(row.slug)
   }
 }
 
@@ -175,7 +325,7 @@ export const getBlogPostById = async (
   id: string
 ): Promise<BlogPostRecord | null> => {
   const result = await postgresPool.query(
-    `select *
+    `select ${buildSelectClause('full')}
      from ${TABLE_NAME}
      where id = $1
      limit 1`,
@@ -183,14 +333,14 @@ export const getBlogPostById = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const getBlogPostBySlug = async (
   slug: string
 ): Promise<BlogPostRecord | null> => {
   const result = await postgresPool.query(
-    `select *
+    `select ${buildSelectClause('full')}
      from ${TABLE_NAME}
      where slug = $1
      limit 1`,
@@ -198,14 +348,14 @@ export const getBlogPostBySlug = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const getPublishedBlogPostBySlug = async (
   slug: string
 ): Promise<BlogPostRecord | null> => {
   const result = await postgresPool.query(
-    `select *
+    `select ${buildSelectClause('full')}
      from ${TABLE_NAME}
      where slug = $1
        and ${PUBLIC_BLOG_POSTS_WHERE}
@@ -214,21 +364,7 @@ export const getPublishedBlogPostBySlug = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
-}
-
-export const getLatestBlogPost = async (): Promise<BlogPostRecord | null> => {
-  const result = await postgresPool.query(
-    `select *
-     from ${TABLE_NAME}
-     where ${PUBLIC_BLOG_POSTS_WHERE}
-     order by publish_timestamp desc nulls last, created_at desc
-     limit 1`
-  )
-
-  if (!result.rows.length) return null
-
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const slugExists = async (
@@ -257,23 +393,153 @@ export const slugExists = async (
 
 export const listBlogPosts = async (
   options: ListBlogPostsOptions = {}
-): Promise<BlogPostRecord[]> => {
-  const { whereSql, values } = buildWhereClause(options)
+): Promise<BlogPostFullRecord[]> => {
+  const { whereSql, values, nextIndex } = buildWhereClause(options)
   const orderBySql = buildOrderByClause(options.orderField, options.orderDirection)
 
+  const limit =
+    options.limit && Number.isFinite(options.limit)
+      ? Math.max(1, Math.min(100, Number(options.limit)))
+      : null
+
   const result = await postgresPool.query(
-    `select *
+    `select ${buildSelectClause('full')}
      from ${TABLE_NAME}
      ${whereSql}
-     ${orderBySql}`,
-    values
+     ${orderBySql}
+     ${limit ? `limit $${nextIndex}` : ''}`,
+    limit ? [...values, limit] : values
   )
 
-  return result.rows.map(mapRow)
+  return result.rows.map(mapFullRow)
+}
+
+export const listBlogPostCards = async (
+  options: ListBlogPostsOptions = {}
+): Promise<BlogPostCardRecord[]> => {
+  const { whereSql, values, nextIndex } = buildWhereClause(options)
+  const orderBySql = buildOrderByClause(options.orderField, options.orderDirection)
+
+  const limit =
+    options.limit && Number.isFinite(options.limit)
+      ? Math.max(1, Math.min(100, Number(options.limit)))
+      : null
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('card')}
+     from ${TABLE_NAME}
+     ${whereSql}
+     ${orderBySql}
+     ${limit ? `limit $${nextIndex}` : ''}`,
+    limit ? [...values, limit] : values
+  )
+
+  return result.rows.map(mapCardRow)
+}
+
+export const listBlogPostPreviews = async (
+  options: ListBlogPostsOptions = {}
+): Promise<BlogPostPreviewRecord[]> => {
+  const { whereSql, values, nextIndex } = buildWhereClause(options)
+  const orderBySql = buildOrderByClause(options.orderField, options.orderDirection)
+
+  const limit =
+    options.limit && Number.isFinite(options.limit)
+      ? Math.max(1, Math.min(100, Number(options.limit)))
+      : null
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('preview')}
+     from ${TABLE_NAME}
+     ${whereSql}
+     ${orderBySql}
+     ${limit ? `limit $${nextIndex}` : ''}`,
+    limit ? [...values, limit] : values
+  )
+
+  return result.rows.map(mapPreviewRow)
+}
+
+export const listBlogPostSeoRecords = async (
+  options: ListBlogPostsOptions = {}
+): Promise<BlogPostSeoRecord[]> => {
+  const { whereSql, values, nextIndex } = buildWhereClause(options)
+  const orderBySql = buildOrderByClause(options.orderField, options.orderDirection)
+
+  const limit =
+    options.limit && Number.isFinite(options.limit)
+      ? Math.max(1, Math.min(100, Number(options.limit)))
+      : null
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('seo')}
+     from ${TABLE_NAME}
+     ${whereSql}
+     ${orderBySql}
+     ${limit ? `limit $${nextIndex}` : ''}`,
+    limit ? [...values, limit] : values
+  )
+
+  return result.rows.map(mapSeoRow)
+}
+
+export const listBlogPostTinyRecords = async (
+  options: ListBlogPostsOptions = {}
+): Promise<BlogPostTinyRecord[]> => {
+  const { whereSql, values, nextIndex } = buildWhereClause(options)
+  const orderBySql = buildOrderByClause(options.orderField, options.orderDirection)
+
+  const limit =
+    options.limit && Number.isFinite(options.limit)
+      ? Math.max(1, Math.min(100, Number(options.limit)))
+      : null
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('tiny')}
+     from ${TABLE_NAME}
+     ${whereSql}
+     ${orderBySql}
+     ${limit ? `limit $${nextIndex}` : ''}`,
+    limit ? [...values, limit] : values
+  )
+
+  return result.rows.map(mapTinyRow)
+}
+
+export const listBlogPostSlugRecords = async (
+  options: ListBlogPostsOptions = {}
+): Promise<BlogPostSlugRecord[]> => {
+  const { whereSql, values, nextIndex } = buildWhereClause(options)
+  const orderBySql = buildOrderByClause(options.orderField, options.orderDirection)
+
+  const limit =
+    options.limit && Number.isFinite(options.limit)
+      ? Math.max(1, Math.min(100, Number(options.limit)))
+      : null
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('slugOnly')}
+     from ${TABLE_NAME}
+     ${whereSql}
+     ${orderBySql}
+     ${limit ? `limit $${nextIndex}` : ''}`,
+    limit ? [...values, limit] : values
+  )
+
+  return result.rows.map(mapSlugRow)
 }
 
 export const listPublishedBlogPosts = async (): Promise<BlogPostRecord[]> => {
   return listBlogPosts({ publishedOnly: true })
+}
+
+export const listPublishedBlogCardsPaginated = async (
+  options: ListBlogPostsOptions = {}
+): Promise<PaginatedResult<BlogPostCardRecord>> => {
+  return listBlogCardsPaginated({
+    ...options,
+    publishedOnly: true
+  })
 }
 
 export const listFeaturedBlogPosts = async (): Promise<BlogPostRecord[]> => {
@@ -283,11 +549,23 @@ export const listFeaturedBlogPosts = async (): Promise<BlogPostRecord[]> => {
   })
 }
 
-export const listStaffPickBlogPosts = async (): Promise<BlogPostRecord[]> => {
-  return listBlogPosts({
+export const listStaffPickBlogPosts = async (): Promise<BlogPostTinyRecord[]> => {
+  return listBlogPostTinyRecords({
     publishedOnly: true,
-    staffPickOnly: true
+    staffPickOnly: true,
+    limit: 5
   })
+}
+
+export const getLatestBlogPost = async (): Promise<BlogPostCardRecord | null> => {
+    const rows = await listBlogPostCards({
+        publishedOnly: true,
+        orderField: 'publish_timestamp',
+        orderDirection: 'desc',
+        limit: 1
+    })
+
+    return rows.length ? rows[0] : null
 }
 
 export const listBlogPostsByTag = async (
@@ -348,7 +626,7 @@ export const listBlogPostsPaginated = async (
   const paginatedValues = [...values, pageSize, offset]
 
   const result = await postgresPool.query(
-    `select *
+    `select ${buildSelectClause('full')}
      from ${TABLE_NAME}
      ${whereSql}
      ${orderBySql}
@@ -358,7 +636,52 @@ export const listBlogPostsPaginated = async (
   )
 
   return {
-    data: result.rows.map(mapRow),
+    data: result.rows.map(mapFullRow),
+    pagination: {
+      currentPage: page,
+      pageSize,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      totalPages,
+      totalItems
+    }
+  }
+}
+
+export const listBlogCardsPaginated = async (
+  options: ListBlogPostsOptions = {}
+): Promise<PaginatedResult<BlogPostCardRecord>> => {
+  const page = Math.max(1, Number(options.page ?? 1))
+  const pageSize = Math.max(1, Math.min(100, Number(options.pageSize ?? 10)))
+  const offset = (page - 1) * pageSize
+
+  const { whereSql, values, nextIndex } = buildWhereClause(options)
+  const orderBySql = buildOrderByClause(options.orderField, options.orderDirection)
+
+  const countResult = await postgresPool.query<{ total: string }>(
+    `select count(*)::text as total
+     from ${TABLE_NAME}
+     ${whereSql}`,
+    values
+  )
+
+  const totalItems = Number(countResult.rows[0]?.total ?? 0)
+  const totalPages = totalItems > 0 ? Math.ceil(totalItems / pageSize) : 0
+
+  const paginatedValues = [...values, pageSize, offset]
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('card')}
+     from ${TABLE_NAME}
+     ${whereSql}
+     ${orderBySql}
+     limit $${nextIndex}
+     offset $${nextIndex + 1}`,
+    paginatedValues
+  )
+
+  return {
+    data: result.rows.map(mapCardRow),
     pagination: {
       currentPage: page,
       pageSize,
@@ -438,7 +761,7 @@ export const createBlogPost = async (
     ]
   )
 
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const updateBlogPost = async (
@@ -497,7 +820,7 @@ export const updateBlogPost = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const publishBlogPost = async (
@@ -517,7 +840,7 @@ export const publishBlogPost = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const unpublishBlogPost = async (
@@ -535,7 +858,7 @@ export const unpublishBlogPost = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const setBlogPostDraftStatus = async (
@@ -555,7 +878,7 @@ export const setBlogPostDraftStatus = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const toggleBlogPostDraft = async (
@@ -583,7 +906,7 @@ export const setBlogPostFeaturedStatus = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const toggleBlogPostFeatured = async (
@@ -600,7 +923,7 @@ export const toggleBlogPostFeatured = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const setBlogPostStaffPickStatus = async (
@@ -618,7 +941,7 @@ export const setBlogPostStaffPickStatus = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const toggleBlogPostStaffPick = async (
@@ -635,7 +958,7 @@ export const toggleBlogPostStaffPick = async (
   )
 
   if (!result.rows.length) return null
-  return mapRow(result.rows[0])
+  return mapFullRow(result.rows[0])
 }
 
 export const deleteBlogPost = async (id: string): Promise<boolean> => {

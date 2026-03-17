@@ -15,15 +15,24 @@ const REMOTE_PORT = process.env.DB_TUNNEL_REMOTE_PORT || '5432'
 
 const explicitKeyPath = process.env.SSH_KEY_PATH
 const homeDir = os.homedir()
+const sshDir = path.join(homeDir, '.ssh')
 
 const keyCandidates = explicitKeyPath
   ? [explicitKeyPath]
   : [
-      path.join(homeDir, '.ssh', 'id_ed25519'),
-      path.join(homeDir, '.ssh', 'id_rsa')
+      path.join(sshDir, 'ggm_api_windows_ed25519'),
+      path.join(sshDir, 'ggm_api_linux_ed25519'),
+      path.join(sshDir, 'id_ed25519'),
+      path.join(sshDir, 'id_rsa')
     ]
 
 const detectedKeyPath = keyCandidates.find((candidate) => fs.existsSync(candidate))
+
+console.log(`Home directory: ${homeDir}`)
+console.log('Checked SSH key paths:')
+for (const candidate of keyCandidates) {
+  console.log(`- ${candidate} ${fs.existsSync(candidate) ? '(found)' : '(missing)'}`)
+}
 
 const sshArgs = [
   '-p',
@@ -47,6 +56,7 @@ if (detectedKeyPath) {
   console.log(`Auth mode: SSH key (${detectedKeyPath})`)
 } else {
   console.log('Auth mode: password prompt fallback (no local key file found)')
+  console.log('If prompted, type your SSH password and press Enter. On Windows, nothing shows while typing.')
 }
 
 const sshProcess = spawn('ssh', sshArgs, {
