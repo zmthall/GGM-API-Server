@@ -7,6 +7,7 @@ import {
   getBlogPostBySlug,
   getLatestBlogPost,
   getPublishedBlogPostBySlug,
+  listBlogPostCards,
   listBlogPosts,
   listBlogPostsByAuthor,
   listBlogPostsByTag,
@@ -15,6 +16,7 @@ import {
   listPublishedBlogCardsPaginated,
   listPublishedBlogPosts,
   listPublishedBlogPostSlugs,
+  listRelatedBlogPosts,
   listStaffPickBlogPosts,
   publishBlogPost,
   publishedSlugExists,
@@ -35,6 +37,7 @@ import type {
   CreateBlogPostInput,
   ListBlogPostsOptions,
   PaginatedResult,
+  RelatedBlogPostsQueryInput,
   UpdateBlogPostInput
 } from '../types/blogPosts'
 
@@ -174,6 +177,28 @@ export const blogPostsService = {
     options: Omit<ListBlogPostsOptions, 'author'> = {}
   ): Promise<BlogPostRecord[]> {
     return listBlogPostsByAuthor(author, options)
+  },
+
+  async listRelatedPosts(id: string, limit = 4): Promise<BlogPostCardRecord[]> {
+    const safeLimit = Number.isFinite(limit)
+      ? Math.max(1, Math.min(8, Math.floor(limit)))
+      : 4
+
+    const currentPost = await getBlogPostById(id)
+
+    if (!currentPost) {
+      throw new Error('Blog post not found.')
+    }
+
+    const relatedInput: RelatedBlogPostsQueryInput = {
+      id: currentPost.id,
+      title: currentPost.title,
+      summary: currentPost.summary,
+      author: currentPost.author,
+      tags: currentPost.tags
+    }
+
+    return listRelatedBlogPosts(relatedInput, safeLimit)
   },
 
   async count(options: ListBlogPostsOptions = {}): Promise<number> {

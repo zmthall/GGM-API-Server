@@ -20,6 +20,7 @@ import type {
   CreateBlogPostInput,
   ListBlogPostsOptions,
   PaginatedResult,
+  RelatedBlogPostsQueryInput,
   UpdateBlogPostInput
 } from '../../../types/blogPosts'
 
@@ -625,6 +626,67 @@ export const listBlogPostsByAuthor = async (
     ...options,
     author
   })
+}
+
+export const listRelatedBlogPosts = async (
+  currentPost: RelatedBlogPostsQueryInput,
+  limit = 4
+): Promise<BlogPostCardRecord[]> => {
+  const safeLimit = Number.isFinite(limit)
+    ? Math.max(1, Math.min(8, Math.floor(limit)))
+    : 4
+
+  const currentTags = Array.isArray(currentPost.tags) ? currentPost.tags : []
+
+  const searchDocument = [
+    currentPost.title ?? '',
+    currentPost.summary ?? '',
+    currentTags.join(' ')
+  ]
+    .join(' ')
+    .trim()
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('card')}
+      from ${TABLE_NAME} bp
+      where bp.id <> $1
+        and ${PUBLIC_BLOG_POSTS_WHERE}
+      order by
+        (
+          (
+            select count(*)
+            from unnest(coalesce(bp.tags, '{}')) as candidate_tag
+            where candidate_tag = any($2::text[])
+          ) * 10
+        )
+        + (
+          case
+            when bp.author = $3 then 3
+            else 0
+          end
+        )
+        + (
+          ts_rank(
+            to_tsvector(
+              'english',
+              coalesce(bp.title, '') || ' ' || coalesce(bp.summary, '')
+            ),
+            websearch_to_tsquery('english', $4)
+          ) * 5
+        ) desc,
+        bp.publish_timestamp desc nulls last,
+        bp.updated_at desc
+      limit $5`,
+    [
+      currentPost.id,
+      currentTags,
+      currentPost.author,
+      searchDocument || currentPost.title,
+      safeLimit
+    ]
+  )
+
+  return result.rows.map(mapCardRow)
 }
 
 export const countBlogPosts = async (

@@ -772,6 +772,37 @@ export const blogPostsController = {
       })
     }
   },
+  
+  async listRelatedPosts(req: Request, res: Response): Promise<void> {
+  try {
+    const rawLimit = Number(req.query.limit)
+    const limit =
+      Number.isFinite(rawLimit) && rawLimit > 0
+        ? Math.min(Math.floor(rawLimit), 8)
+        : 4
+
+    const posts = await blogPostsService.listRelatedPosts(req.params.id, limit)
+
+    res.status(200).json({
+      success: true,
+      data: posts
+    })
+  } catch (error: any) {
+    if (error?.message === 'Blog post not found.') {
+      res.status(404).json({
+        success: false,
+        message: 'Blog post not found.'
+      })
+      return
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to list related blog posts.',
+      error
+    })
+  }
+},
 
   async count(req: Request, res: Response): Promise<void> {
     try {

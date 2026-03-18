@@ -123,11 +123,19 @@ const buildPostContent = (postNumber: number): string => {
   return `
 
 ::PostAtAGlance
-- **Post Number:** ${postNumber}
-- **Purpose:** Full prose + MDC validation
-- **Read Time:** ~10 minutes
-- **Components Tested:** Callouts, CTA tiles, phone links, actions, references
-- **Goal:** Simulate real production article behavior
+- **Understand the basics first:** Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet, helping you quickly grasp the core differences between care types and services.
+
+- **Prepare before you go:** Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, giving you a simple snapshot of needs so conversations during tours are actually meaningful.
+
+- **Ask better questions:** Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur, focusing on staffing, care levels, medication handling, and daily support structure.
+
+- **Know wha's included:** Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum—clarifying bundled services versus add-ons that may impact total cost.
+
+- **Compare pricing clearly:** Curabitur blandit tempus porttitor. Maecenas faucibus mollis interdum, helping you understand how pricing models shift based on care needs over time.
+
+- **Avoid common mistakes:** Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum, ensuring you don't overlook policies or details that create issues later.
+
+- **Use a simple scoring system:** Cras mattis consectetur purus sit amet fermentum. Vestibulum id ligula porta felis euismod semper, giving you a way to compare options side-by-side with confidence.
 ::
 
 ::PleaseNote

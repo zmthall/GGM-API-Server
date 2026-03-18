@@ -36,6 +36,14 @@ export interface ListBlogPostsOptions extends PaginationOptions {
   select?: BlogPostSelectPreset
 }
 
+export interface RelatedBlogPostsQueryInput {
+  id: string
+  title: string
+  summary: string
+  author: string
+  tags: string[]
+}
+
 export interface BlogPostFullRecord {
   id: string
   slug: string
