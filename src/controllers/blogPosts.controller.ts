@@ -611,6 +611,24 @@ export const blogPostsController = {
       })
     }
   },
+  
+  async existsPublishedBySlug(req: Request, res: Response): Promise<void> {
+    try {
+      const excludeId = toOptionalString(req.query.excludeId)
+      const result = await blogPostsService.existsPublishedBySlug(req.params.slug, excludeId)
+
+      res.status(200).json({
+        success: true,
+        data: result
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to check blog post existence by slug.',
+        error
+      })
+    }
+  },
 
   async list(req: Request, res: Response): Promise<void> {
     try {

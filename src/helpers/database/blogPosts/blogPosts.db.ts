@@ -391,6 +391,32 @@ export const slugExists = async (
   return result.rows.length > 0
 }
 
+export const publishedSlugExists = async (
+  slug: string,
+  excludeId?: string
+): Promise<boolean> => {
+  const result = excludeId
+    ? await postgresPool.query(
+        `select 1
+         from ${TABLE_NAME}
+         where slug = $1
+           and ${PUBLIC_BLOG_POSTS_WHERE}
+           and id <> $2
+         limit 1`,
+        [slug, excludeId]
+      )
+    : await postgresPool.query(
+        `select 1
+         from ${TABLE_NAME}
+         where slug = $1
+            and ${PUBLIC_BLOG_POSTS_WHERE}
+         limit 1`,
+        [slug]
+      )
+
+  return result.rows.length > 0
+}
+
 export const listBlogPosts = async (
   options: ListBlogPostsOptions = {}
 ): Promise<BlogPostFullRecord[]> => {
@@ -402,12 +428,14 @@ export const listBlogPosts = async (
       ? Math.max(1, Math.min(100, Number(options.limit)))
       : null
 
+  const limitSql = limit ? `limit $${nextIndex}` : ''
+
   const result = await postgresPool.query(
     `select ${buildSelectClause('full')}
      from ${TABLE_NAME}
      ${whereSql}
      ${orderBySql}
-     ${limit ? `limit $${nextIndex}` : ''}`,
+     ${limitSql}`,
     limit ? [...values, limit] : values
   )
 
@@ -425,12 +453,14 @@ export const listBlogPostCards = async (
       ? Math.max(1, Math.min(100, Number(options.limit)))
       : null
 
+  const limitSql = limit ? `limit $${nextIndex}` : ''
+
   const result = await postgresPool.query(
     `select ${buildSelectClause('card')}
      from ${TABLE_NAME}
      ${whereSql}
      ${orderBySql}
-     ${limit ? `limit $${nextIndex}` : ''}`,
+     ${limitSql}`,
     limit ? [...values, limit] : values
   )
 
@@ -448,12 +478,14 @@ export const listBlogPostPreviews = async (
       ? Math.max(1, Math.min(100, Number(options.limit)))
       : null
 
+  const limitSql = limit ? `limit $${nextIndex}` : ''
+
   const result = await postgresPool.query(
     `select ${buildSelectClause('preview')}
      from ${TABLE_NAME}
      ${whereSql}
      ${orderBySql}
-     ${limit ? `limit $${nextIndex}` : ''}`,
+     ${limitSql}`,
     limit ? [...values, limit] : values
   )
 
@@ -471,12 +503,14 @@ export const listBlogPostSeoRecords = async (
       ? Math.max(1, Math.min(100, Number(options.limit)))
       : null
 
+  const limitSql = limit ? `limit $${nextIndex}` : ''
+
   const result = await postgresPool.query(
     `select ${buildSelectClause('seo')}
      from ${TABLE_NAME}
      ${whereSql}
      ${orderBySql}
-     ${limit ? `limit $${nextIndex}` : ''}`,
+     ${limitSql}`,
     limit ? [...values, limit] : values
   )
 
@@ -494,12 +528,14 @@ export const listBlogPostTinyRecords = async (
       ? Math.max(1, Math.min(100, Number(options.limit)))
       : null
 
+  const limitSql = limit ? `limit $${nextIndex}` : ''
+
   const result = await postgresPool.query(
     `select ${buildSelectClause('tiny')}
      from ${TABLE_NAME}
      ${whereSql}
      ${orderBySql}
-     ${limit ? `limit $${nextIndex}` : ''}`,
+     ${limitSql}`,
     limit ? [...values, limit] : values
   )
 
@@ -517,12 +553,15 @@ export const listBlogPostSlugRecords = async (
       ? Math.max(1, Math.min(100, Number(options.limit)))
       : null
 
+
+  const limitSql = limit ? `limit $${nextIndex}` : ''
+
   const result = await postgresPool.query(
     `select ${buildSelectClause('slugOnly')}
      from ${TABLE_NAME}
      ${whereSql}
      ${orderBySql}
-     ${limit ? `limit $${nextIndex}` : ''}`,
+     ${limitSql}`,
     limit ? [...values, limit] : values
   )
 

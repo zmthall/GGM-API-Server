@@ -7,11 +7,11 @@ import {
 
 import type { CreateBlogPostInput } from '../../../types/blogPosts'
 
-const TOTAL_TEST_POSTS = 30
+const TOTAL_TEST_POSTS = 100
 
 const TEST_POST_IDS = Array.from({ length: TOTAL_TEST_POSTS }, (_, index) =>
   `seed-blog-post-${String(index + 1).padStart(3, '0')}`
-) as string[]
+)
 
 const AUTHORS = [
   'Zachary Thallas',
@@ -121,43 +121,192 @@ const buildPostState = (): {
 
 const buildPostContent = (postNumber: number): string => {
   return `
-## Test Blog Post ${postNumber}
 
-This is generated seed content for blog post ${postNumber}. It exists to test database queries, public filtering, cards, tiny records, pagination, and MDC rendering.
-
-::blog-callout{title="Quick Tip ${postNumber}"}
-This is reusable test content for post ${postNumber}. It helps verify custom content blocks render correctly.
+::PostAtAGlance
+- **Post Number:** ${postNumber}
+- **Purpose:** Full prose + MDC validation
+- **Read Time:** ~10 minutes
+- **Components Tested:** Callouts, CTA tiles, phone links, actions, references
+- **Goal:** Simulate real production article behavior
 ::
 
-### What this post can test
-
-- Blog cards
-- Tiny blog records
-- Staff pick filtering
-- Featured filtering
-- Published filtering
-- Draft filtering
-- Future publish timestamp filtering
-
-::blog-at-a-glance
-- Generated post number ${postNumber}
-- Useful for frontend testing
-- Useful for API route testing
-- Useful for pagination testing
+::PleaseNote
+This is a generated long-form test article used to validate rendering, spacing, and component behavior. It is not real-world advice.
 ::
 
-### Notes
+## Test Post ${postNumber}: Full Rendering Validation
 
-Every generated post shares a similar structure, but has unique metadata such as title, slug, and randomized state values.
+This article is intentionally dense. Its purpose is to simulate a real-world blog experience where multiple content types are layered together in a structured way.
 
-::blog-references
+A short article can look fine even if your system has problems. A long article exposes everything—spacing, hierarchy, responsiveness, and component behavior.
+
+### Inline Component Testing
+
+If you need help scheduling, call :phone-number{department="csr"}[].
+
+For after-hours coordination, call :phone-number{department="dispatch"}[].
+
+Testing custom formatting: :phone-number{department="other" number="719-555-1234"}[].
+
+You can also test inline icons like :base-icon{name="mdi:check-circle" size="size-4" color="text-brand-primary" title="Check icon"}[] inside running text.
+
+---
+
+## Section One: Content Structure
+
+A good article is not just text—it is structured information.
+
+- **Headings guide navigation**
+- **Lists improve readability**
+- **Callouts highlight importance**
+- **Actions drive engagement**
+
+::PostCallout{title="Structure Insight"}
+Content should feel organized even when it is dense. If it feels overwhelming, your spacing or hierarchy is off.
+::
+
+### Subsection: Reading Behavior
+
+Users typically scan before they read.
+
+1. Look at headings
+2. Scan bold text
+3. Check lists
+4. Decide whether to continue
+
+#### Why this matters
+
+If your layout does not support scanning, your article loses effectiveness.
+
+> A strong article reduces friction, not just delivers information.
+
+---
+
+## Section Two: Mixed Content Rendering
+
+This section stacks multiple markdown types together.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus.
+
+### Unordered List
+
+- First item
+- Second item with [link](https://nuxt.com/)
+- Third item with **bold text**
+- Fourth item with inline icon :base-icon{name="mdi:check-circle" size="size-4" color="text-brand-primary" title="Check icon"}[]
+
+### Ordered List
+
+1. Step one
+2. Step two
+3. Step three
+4. Step four
+
+#### Paragraph After List
+
+This paragraph exists to test spacing after lists. If this feels too tight or too far away, your prose spacing needs adjustment.
+
+---
+
+## Section Three: CTA and Action Testing
+
+This section validates action-based components inside content.
+
+::CenteredAction{to="/resources/schedule-a-ride" variant="primary" styling="px-4 py-2"}
+Schedule a Ride Online
+::
+
+### CTA Tile Layout
+
+::CenterLayoutFlex
+  ::PostCtaTile{to="/news/blog/post/nemt-pueblo" name="mdi:ambulance" title="NEMT in Pueblo" message="How medical transportation works locally."}
+  ::
+
+  ::PostCtaTile{to="/news/blog/post/nemt-business" name="mdi:office-building" title="NEMT Business Guide" message="Understanding how providers operate."}
+  ::
+
+  ::PostCtaTile{to="/news/blog/post/medicaid-intro" name="mdi:hand-heart" title="Medicaid Overview" message="How Medicaid transportation works."}
+  ::
+::
+
+#### Why this matters
+
+This tests:
+
+- nested components
+- layout wrapping
+- responsive behavior
+- hover + interaction states
+
+---
+
+## Section Four: Deep Hierarchy
+
+### H3 Section
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+#### H4 Section
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum id ligula porta felis euismod semper.
+
+### Another H3
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+#### Another H4
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+---
+
+## Section Five: Long Reading Block
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sed odio dui. Cras justo odio, dapibus ac facilisis in.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed posuere consectetur est at lobortis.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur blandit tempus porttitor.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean lacinia bibendum nulla sed consectetur. Vestibulum id ligula porta felis euismod semper.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent commodo cursus magna, vel scelerisque nisl consectetur et.
+
+---
+
+## Section Six: Link Behavior
+
 - [Nuxt](https://nuxt.com/)
+- [Nuxt Content](https://content.nuxt.com/)
 - [PostgreSQL](https://www.postgresql.org/)
+
+::PostCallout{title="Link Styling"}
+Links should be clear but not overwhelming.
 ::
+
+---
 
 ## Final Thoughts
 
-This is pseudo content for test post ${postNumber}, intended to make renderer and query validation easier.
+This article validates:
+
+- typography hierarchy
+- spacing consistency
+- MDC component rendering
+- inline component usage
+- responsive layout behavior
+- long-form readability
+
+If you need one more inline render check before the article ends, call :phone-number{department="csr"}[] or show an inline icon :base-icon{name="mdi:phone" size="size-4" color="text-brand-primary" title="Phone icon"}[].
+
+::PostReferences
+- [Nuxt](https://nuxt.com/)
+- [Nuxt Content](https://content.nuxt.com/)
+- [PostgreSQL](https://www.postgresql.org/)
+::
+
   `.trim()
 }
 

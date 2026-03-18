@@ -1,4 +1,3 @@
-import { list } from 'pdfkit'
 import {
   blogPostExistsById,
   countBlogPosts,
@@ -18,6 +17,7 @@ import {
   listPublishedBlogPostSlugs,
   listStaffPickBlogPosts,
   publishBlogPost,
+  publishedSlugExists,
   setBlogPostDraftStatus,
   setBlogPostFeaturedStatus,
   setBlogPostStaffPickStatus,
@@ -122,6 +122,11 @@ export const blogPostsService = {
 
   async existsBySlug(slug: string, excludeId?: string): Promise<SlugExistsResult> {
     const exists = await slugExists(slug, excludeId)
+    return { exists }
+  },
+
+  async existsPublishedBySlug(slug: string, excludeId?: string): Promise<SlugExistsResult> {
+    const exists = await publishedSlugExists(slug, excludeId)
     return { exists }
   },
 
