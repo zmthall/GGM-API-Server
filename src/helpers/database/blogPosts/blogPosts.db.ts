@@ -168,14 +168,16 @@ const mapPreviewRow = (row: Record<string, unknown>): BlogPostPreviewRecord => {
     id: toSafeString(row.id),
     slug: toSafeString(row.slug),
     title: toSafeString(row.title),
-    summary: toSafeString(row.summary),
     thumbnail: toSafeString(row.thumbnail),
     thumbnail_alt: toSafeString(row.thumbnail_alt),
     thumbnail_width: row.thumbnail_width == null ? null : Number(row.thumbnail_width),
     thumbnail_height: row.thumbnail_height == null ? null : Number(row.thumbnail_height),
+    published: toSafeBoolean(row.published),
     publish_timestamp: row.publish_timestamp
       ? toSafeNullableDate(row.publish_timestamp as Date)
-      : null
+      : null,
+    draft: toSafeBoolean(row.draft),
+    updated_at: toSafeDate(row.updated_at)
   }
 }
 
@@ -783,6 +785,51 @@ export const listBlogCardsPaginated = async (
 
   return {
     data: result.rows.map(mapCardRow),
+    pagination: {
+      currentPage: page,
+      pageSize,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      totalPages,
+      totalItems
+    }
+  }
+}
+
+export const listBlogPreviewsPaginated = async (
+  options: ListBlogPostsOptions = {}
+): Promise<PaginatedResult<BlogPostPreviewRecord>> => {
+  const page = Math.max(1, Number(options.page ?? 1))
+  const pageSize = Math.max(1, Math.min(100, Number(options.pageSize ?? 10)))
+  const offset = (page - 1) * pageSize
+
+  const { whereSql, values, nextIndex } = buildWhereClause(options)
+  const orderBySql = buildOrderByClause(options.orderField, options.orderDirection)
+
+  const countResult = await postgresPool.query<{ total: string }>(
+    `select count(*)::text as total
+     from ${TABLE_NAME}
+     ${whereSql}`,
+    values
+  )
+
+  const totalItems = Number(countResult.rows[0]?.total ?? 0)
+  const totalPages = totalItems > 0 ? Math.ceil(totalItems / pageSize) : 0
+
+  const paginatedValues = [...values, pageSize, offset]
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('preview')}
+     from ${TABLE_NAME}
+     ${whereSql}
+     ${orderBySql}
+     limit $${nextIndex}
+     offset $${nextIndex + 1}`,
+    paginatedValues
+  )
+
+  return {
+    data: result.rows.map(mapPreviewRow),
     pagination: {
       currentPage: page,
       pageSize,

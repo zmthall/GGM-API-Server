@@ -90,12 +90,14 @@ export interface BlogPostPreviewRecord {
   id: string
   slug: string
   title: string
-  summary: string
   thumbnail: string
   thumbnail_alt: string
   thumbnail_width: number | null
   thumbnail_height: number | null
+  published: boolean
   publish_timestamp: Date | null
+  draft: boolean
+  updated_at: Date
 }
 
 export interface BlogPostSeoRecord {

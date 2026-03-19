@@ -547,7 +547,8 @@ export const blogPostsController = {
 
       res.status(200).json({
         success: true,
-        data: posts
+        data: posts.data,
+        pagination: posts.pagination
       })
     } catch (error) {
       res.status(500).json({

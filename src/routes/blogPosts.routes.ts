@@ -30,8 +30,9 @@ router.get('/id/:id', blogPostsController.getById)
 /**
  * Admin read routes
 */
-router.get('/exists/slug/:slug', blogPostsController.existsBySlug)
 router.get('/all', blogPostsController.fetchAll)
+
+router.get('/exists/slug/:slug', blogPostsController.existsBySlug)
 router.get('/paginated', blogPostsController.listPaginated)
 router.get('/count', blogPostsController.count)
 router.get('/exists/id/:id', blogPostsController.existsById)

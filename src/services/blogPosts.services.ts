@@ -12,6 +12,7 @@ import {
   listBlogPostsByAuthor,
   listBlogPostsByTag,
   listBlogPostsPaginated,
+  listBlogPreviewsPaginated,
   listFeaturedBlogPosts,
   listPublishedBlogCardsPaginated,
   listPublishedBlogPosts,
@@ -32,6 +33,7 @@ import {
 } from '../helpers/database/blogPosts/blogPosts.db'
 import type {
   BlogPostCardRecord,
+  BlogPostPreviewRecord,
   BlogPostRecord,
   BlogPostTinyRecord,
   CreateBlogPostInput,
@@ -110,8 +112,8 @@ export const blogPostsService = {
     return getLatestBlogPost()
   },
 
-    async fetchAll(options: ListBlogPostsOptions = {}): Promise<BlogPostRecord[]> {
-    return listBlogPosts(options)
+    async fetchAll(options: ListBlogPostsOptions = {}): Promise<PaginatedResult<BlogPostPreviewRecord>> {
+    return listBlogPreviewsPaginated(options);
   },
 
   async fetchAllPublished(): Promise<BlogPostRecord[]> {
