@@ -43,11 +43,11 @@ router.get('/exists/id/:id', blogPostsController.existsById)
  * Admin write routes
  */
 router.post('/', blogPostsController.create)
+router.patch('/publish/:id', blogPostsController.publish)
 router.patch('/:id', blogPostsController.update)
 router.delete('/:id', blogPostsController.remove)
 
-router.patch('/:id/publish', blogPostsController.publish)
-router.patch('/:id/unpublish', blogPostsController.unpublish)
+router.patch('/unpublish/:id', blogPostsController.unpublish)
 
 router.patch('/:id/draft', blogPostsController.setDraft)
 router.patch('/:id/draft/toggle', blogPostsController.toggleDraft)

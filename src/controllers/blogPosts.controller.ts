@@ -215,6 +215,9 @@ export const blogPostsController = {
       const publishTimestamp = toOptionalDate(req.body.publishTimestamp)
       const published = await blogPostsService.publish(req.params.id, publishTimestamp)
 
+      console.log('Publish result:', published)
+      console.log('Publish timestamp:', publishTimestamp)
+
       if (!published) {
         res.status(404).json({
           success: false,

@@ -17,6 +17,7 @@ import type {
   BlogPostSeoRecord,
   BlogPostSlugRecord,
   BlogPostTinyRecord,
+  BlogPostUpdateRecord,
   CreateBlogPostInput,
   ListBlogPostsOptions,
   PaginatedResult,
@@ -74,10 +75,9 @@ const BLOG_POST_SELECT_MAP: Record<BlogPostSelectPreset, string> = {
     featured,
     staff_pick,
     read_time,
-    publish_timestamp
-  `,
-  preview: `
-    id,
+    publish_timestamp`,
+  preview:
+   `id,
     slug,
     title,
     summary,
@@ -85,8 +85,10 @@ const BLOG_POST_SELECT_MAP: Record<BlogPostSelectPreset, string> = {
     thumbnail_alt,
     thumbnail_width,
     thumbnail_height,
-    publish_timestamp
-  `,
+    published,
+    publish_timestamp,
+    draft,
+    updated_at `,
   slugOnly: `
     slug
   `,
@@ -131,9 +133,7 @@ const mapFullRow = (row: Record<string, unknown>): BlogPostFullRecord => {
     read_time: Number(row.read_time ?? 0),
     draft: toSafeBoolean(row.draft),
     published: toSafeBoolean(row.published),
-    publish_timestamp: row.publish_timestamp
-      ? toSafeNullableDate(row.publish_timestamp as Date)
-      : null,
+    publish_timestamp: toSafeNullableDate(row.publish_timestamp),
     seo_title: toSafeString(row.seo_title),
     seo_description: toSafeString(row.seo_description),
     seo_image: toSafeString(row.seo_image),
@@ -157,9 +157,7 @@ const mapCardRow = (row: Record<string, unknown>): BlogPostCardRecord => {
     featured: toSafeBoolean(row.featured),
     staff_pick: toSafeBoolean(row.staff_pick),
     read_time: Number(row.read_time ?? 0),
-    publish_timestamp: row.publish_timestamp
-      ? toSafeNullableDate(row.publish_timestamp as Date)
-      : null
+    publish_timestamp: toSafeNullableDate(row.publish_timestamp)
   }
 }
 
@@ -191,9 +189,20 @@ const mapSeoRow = (row: Record<string, unknown>): BlogPostSeoRecord => {
     seo_description: toSafeString(row.seo_description),
     seo_image: toSafeString(row.seo_image),
     canonical_url: toSafeString(row.canonical_url),
-    publish_timestamp: row.publish_timestamp
-      ? toSafeNullableDate(row.publish_timestamp as Date)
-      : null
+    publish_timestamp: toSafeNullableDate(row.publish_timestamp)
+  }
+}
+
+const mapUpdateRow = (row: Record<string, unknown>): BlogPostUpdateRecord => {
+  return {
+    id: toSafeString(row.id),
+    created_at: toSafeDate(row.created_at),
+    slug: toSafeString(row.slug),
+    canonical_url: toSafeString(row.canonical_url),
+    published: toSafeBoolean(row.published),
+    publish_timestamp: toSafeNullableDate(row.publish_timestamp),
+    draft: toSafeBoolean(row.draft),
+    updated_at: toSafeDate(row.updated_at)
   }
 }
 
@@ -974,7 +983,7 @@ export const updateBlogPost = async (
 export const publishBlogPost = async (
   id: string,
   publishTimestamp?: Date
-): Promise<BlogPostRecord | null> => {
+): Promise<BlogPostUpdateRecord | null> => {
   const result = await postgresPool.query(
     `update ${TABLE_NAME}
      set
@@ -988,12 +997,12 @@ export const publishBlogPost = async (
   )
 
   if (!result.rows.length) return null
-  return mapFullRow(result.rows[0])
+  return mapUpdateRow(result.rows[0])
 }
 
 export const unpublishBlogPost = async (
   id: string
-): Promise<BlogPostRecord | null> => {
+): Promise<BlogPostUpdateRecord | null> => {
   const result = await postgresPool.query(
     `update ${TABLE_NAME}
      set
@@ -1006,7 +1015,7 @@ export const unpublishBlogPost = async (
   )
 
   if (!result.rows.length) return null
-  return mapFullRow(result.rows[0])
+  return mapUpdateRow(result.rows[0])
 }
 
 export const setBlogPostDraftStatus = async (

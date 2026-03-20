@@ -112,6 +112,17 @@ export interface BlogPostSeoRecord {
   publish_timestamp: Date | null
 }
 
+export interface BlogPostUpdateRecord {
+  id: string
+  created_at: Date
+  slug: string
+  canonical_url: string
+  published: boolean
+  publish_timestamp: Date | null
+  draft: boolean
+  updated_at: Date
+}
+
 export interface BlogPostTinyRecord {
   id: string
   slug: string

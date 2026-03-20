@@ -36,6 +36,7 @@ import type {
   BlogPostPreviewRecord,
   BlogPostRecord,
   BlogPostTinyRecord,
+  BlogPostUpdateRecord,
   CreateBlogPostInput,
   ListBlogPostsOptions,
   PaginatedResult,
@@ -64,11 +65,11 @@ export const blogPostsService = {
     return deleteBlogPost(id)
   },
 
-  async publish(id: string, publishTimestamp?: Date): Promise<BlogPostRecord | null> {
+  async publish(id: string, publishTimestamp?: Date): Promise<BlogPostUpdateRecord | null> {
     return publishBlogPost(id, publishTimestamp)
   },
 
-  async unpublish(id: string): Promise<BlogPostRecord | null> {
+  async unpublish(id: string): Promise<BlogPostUpdateRecord | null> {
     return unpublishBlogPost(id)
   },
 
@@ -112,7 +113,7 @@ export const blogPostsService = {
     return getLatestBlogPost()
   },
 
-    async fetchAll(options: ListBlogPostsOptions = {}): Promise<PaginatedResult<BlogPostPreviewRecord>> {
+  async fetchAll(options: ListBlogPostsOptions = {}): Promise<PaginatedResult<BlogPostPreviewRecord>> {
     return listBlogPreviewsPaginated(options);
   },
 
