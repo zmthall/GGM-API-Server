@@ -160,6 +160,56 @@ export const blogPostsController = {
     }
   },
 
+  async uploadThumbnail(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({
+          success: false,
+          message: 'Thumbnail file is required.'
+        })
+        return
+      }
+
+      const uploaded = await blogPostsService.uploadThumbnail(req.file)
+
+      res.status(200).json({
+        success: true,
+        data: uploaded
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to upload blog thumbnail.',
+        error
+      })
+    }
+  },
+
+  async uploadSeo(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({
+          success: false,
+          message: 'SEO image file is required.'
+        })
+        return
+      }
+
+      const uploaded = await blogPostsService.uploadSeo(req.file)
+
+      res.status(200).json({
+        success: true,
+        data: uploaded
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to upload blog SEO image.',
+        error
+      })
+    }
+  },
+
   async update(req: Request, res: Response): Promise<void> {
     try {
       const updated = await blogPostsService.update(req.params.id, parseUpdateBody(req))

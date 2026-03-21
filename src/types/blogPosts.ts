@@ -148,6 +148,12 @@ export interface PaginatedResult<T> {
   }
 }
 
+export interface BlogImageUploadResult {
+  path: string
+  width: number | null
+  height: number | null
+}
+
 export interface CreateBlogPostInput {
   id: string
   slug: string
@@ -193,4 +199,12 @@ export interface UpdateBlogPostInput {
   seoDescription?: string
   seoImage?: string
   canonicalUrl?: string
+}
+
+export interface BlogPostExistsResult {
+  exists: boolean
+}
+
+export interface SlugExistsResult {
+  exists: boolean
 }

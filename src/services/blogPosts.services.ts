@@ -7,7 +7,6 @@ import {
   getBlogPostBySlug,
   getLatestBlogPost,
   getPublishedBlogPostBySlug,
-  listBlogPostCards,
   listBlogPosts,
   listBlogPostsByAuthor,
   listBlogPostsByTag,
@@ -32,7 +31,9 @@ import {
   updateBlogPost
 } from '../helpers/database/blogPosts/blogPosts.db'
 import type {
+  BlogImageUploadResult,
   BlogPostCardRecord,
+  BlogPostExistsResult,
   BlogPostPreviewRecord,
   BlogPostRecord,
   BlogPostTinyRecord,
@@ -41,16 +42,12 @@ import type {
   ListBlogPostsOptions,
   PaginatedResult,
   RelatedBlogPostsQueryInput,
+  SlugExistsResult,
   UpdateBlogPostInput
 } from '../types/blogPosts'
 
-export interface BlogPostExistsResult {
-  exists: boolean
-}
-
-export interface SlugExistsResult {
-  exists: boolean
-}
+import { BLOG_THUMBNAILS_DIR, BLOG_SEO_DIR } from '../config/paths'
+import { saveBlogImage } from '../helpers/blogPostUploads'
 
 export const blogPostsService = {
   async create(input: CreateBlogPostInput): Promise<BlogPostRecord> {
@@ -64,6 +61,14 @@ export const blogPostsService = {
   async remove(id: string): Promise<boolean> {
     return deleteBlogPost(id)
   },
+
+  async uploadThumbnail(file: Express.Multer.File): Promise<BlogImageUploadResult> {
+    return saveBlogImage(file, BLOG_THUMBNAILS_DIR, '/uploads/blog/thumbnails')
+  },
+
+  async uploadSeo(file: Express.Multer.File): Promise<BlogImageUploadResult> {
+    return saveBlogImage(file, BLOG_SEO_DIR, '/uploads/blog/seo')
+  },  
 
   async publish(id: string, publishTimestamp?: Date): Promise<BlogPostUpdateRecord | null> {
     return publishBlogPost(id, publishTimestamp)

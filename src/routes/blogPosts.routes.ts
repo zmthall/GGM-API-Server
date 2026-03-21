@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { blogPostsController } from '../controllers/blogPosts.controller'
+import multer from 'multer'
 
 const router = Router()
 
@@ -57,5 +58,17 @@ router.patch('/:id/featured/toggle', blogPostsController.toggleFeatured)
 
 router.patch('/:id/staff-pick', blogPostsController.setStaffPick)
 router.patch('/:id/staff-pick/toggle', blogPostsController.toggleStaffPick)
+
+/**
+ * Admin Media Routes
+*/
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+})
+
+router.post('/upload-thumbnail', upload.single('thumbnailImage'), blogPostsController.uploadThumbnail)
+router.post('/upload-seo', upload.single('seoImage'), blogPostsController.uploadSeo)
 
 export default router
