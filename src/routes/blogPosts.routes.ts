@@ -44,9 +44,9 @@ router.get('/exists/id/:id', blogPostsController.existsById)
  */
 router.post('/', blogPostsController.create)
 router.patch('/publish/:id', blogPostsController.publish)
-router.patch('/:id', blogPostsController.update)
 router.delete('/:id', blogPostsController.remove)
 
+router.patch('/:id', blogPostsController.update)
 router.patch('/unpublish/:id', blogPostsController.unpublish)
 
 router.patch('/:id/draft', blogPostsController.setDraft)

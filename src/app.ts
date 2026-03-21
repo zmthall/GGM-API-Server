@@ -1,7 +1,8 @@
+import 'dotenv/config'
 import express, { NextFunction, Request, Response } from 'express'
 import path from 'node:path'
 import cors from 'cors'
-import 'dotenv/config'
+import { UPLOADS_ROOT } from './config/paths'
 
 import pinoHttp from 'pino-http'
 import { logger, randomID } from './logger'
@@ -177,8 +178,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 app.use(express.json())
 
-const uploadsPath = path.resolve(__dirname, 'uploads')
-app.use('/uploads', express.static(uploadsPath))
+app.use('/uploads', express.static(UPLOADS_ROOT))
 
 // Serve application form PDFs (background-check, caps, availability-schedule)
 const applicationStaticPath = path.resolve(__dirname, 'static', 'application')
