@@ -58,7 +58,28 @@ export const blogPostsService = {
   },
 
   async update(id: string, input: UpdateBlogPostInput): Promise<BlogPostRecord | null> {
-    return updateBlogPost(id, input)
+    const existingPost = await getBlogPostById(id)
+
+    if (!existingPost) return null
+
+    const updatedPost = await updateBlogPost(id, input)
+
+    if (!updatedPost) return null
+
+    const thumbnailChanged =
+      existingPost.thumbnail &&
+      updatedPost.thumbnail &&
+      existingPost.thumbnail !== updatedPost.thumbnail
+
+    if (thumbnailChanged) {
+      try {
+        deleteBlogImage(existingPost.thumbnail, BLOG_THUMBNAILS_DIR, '/uploads/blog/thumbnails')
+      } catch (error) {
+        console.error('Failed to delete previous blog thumbnail:', error)
+      }
+    }
+
+    return updatedPost
   },
 
   async remove(id: string): Promise<boolean> {

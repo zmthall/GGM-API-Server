@@ -73,19 +73,33 @@ export function deleteBlogImage(
   const normalizedPublicBasePath = publicBasePath.replace(/\/+$/, '')
   const normalizedImagePath = imagePath.replace(/\\/g, '/')
 
-  if (!normalizedImagePath.startsWith(`${normalizedPublicBasePath}/`)) {
-    throw new Error('Image path does not match the expected public base path.')
+  const expectedPrefix = `${normalizedPublicBasePath}/`
+
+  if (!normalizedImagePath.startsWith(expectedPrefix)) {
+    console.warn('deleteBlogImage skipped: image path does not match expected public base path.', {
+      imagePath: normalizedImagePath,
+      expectedPublicBasePath: normalizedPublicBasePath
+    })
+    return
   }
 
-  const filename = normalizedImagePath.slice(normalizedPublicBasePath.length + 1)
+  const filename = normalizedImagePath.slice(expectedPrefix.length)
 
   if (!filename) {
-    throw new Error('Could not determine image filename from image path.')
+    console.warn('deleteBlogImage skipped: could not determine filename.', {
+      imagePath: normalizedImagePath
+    })
+    return
   }
 
   const absoluteFilePath = path.join(destinationDir, filename)
 
-  if (fs.existsSync(absoluteFilePath)) {
-    fs.unlinkSync(absoluteFilePath)
+  if (!fs.existsSync(absoluteFilePath)) {
+    console.warn('deleteBlogImage skipped: file does not exist.', {
+      absoluteFilePath
+    })
+    return
   }
+
+  fs.unlinkSync(absoluteFilePath)
 }
