@@ -3,6 +3,7 @@ import {
   countBlogPosts,
   createBlogPost,
   deleteBlogPost,
+  findMatchingBlogPost,
   getBlogPostById,
   getBlogPostBySlug,
   getLatestBlogPost,
@@ -38,6 +39,8 @@ import type {
   BlogPostRecord,
   BlogPostTinyRecord,
   BlogPostUpdateRecord,
+  CheckUniquePostInput,
+  CheckUniquePostResult,
   CreateBlogPostInput,
   ListBlogPostsOptions,
   PaginatedResult,
@@ -47,7 +50,7 @@ import type {
 } from '../types/blogPosts'
 
 import { BLOG_THUMBNAILS_DIR, BLOG_SEO_DIR } from '../config/paths'
-import { saveBlogImage } from '../helpers/blogPostUploads'
+import { deleteBlogImage, saveBlogImage } from '../helpers/blogPostUploads'
 
 export const blogPostsService = {
   async create(input: CreateBlogPostInput): Promise<BlogPostRecord> {
@@ -59,6 +62,14 @@ export const blogPostsService = {
   },
 
   async remove(id: string): Promise<boolean> {
+    const post = await getBlogPostById(id)
+
+    if (!post) return false
+
+    if (post.thumbnail) {
+      deleteBlogImage(post.thumbnail, BLOG_THUMBNAILS_DIR, '/uploads/blog/thumbnails')
+    }
+
     return deleteBlogPost(id)
   },
 
@@ -104,6 +115,28 @@ export const blogPostsService = {
 
   async getById(id: string): Promise<BlogPostRecord | null> {
     return getBlogPostById(id)
+  },
+
+  async checkUniquePost(input: CheckUniquePostInput): Promise<CheckUniquePostResult> {
+    const comparableInput = {
+      id: input.id?.trim() || undefined,
+      slug: input.slug?.trim() || undefined,
+      title: input.title?.trim() || undefined,
+      canonicalUrl: input.canonicalUrl?.trim() || undefined
+    }
+
+    const hasComparableValue = Object.values(comparableInput).some(Boolean)
+
+    if (!hasComparableValue) {
+      throw new Error('At least one of id, slug, title, or canonicalUrl is required.')
+    }
+
+    const match = await findMatchingBlogPost(comparableInput, input.excludeId?.trim() || undefined)
+
+    return {
+      unique: !match,
+      match
+    }
   },
 
   async getBySlug(slug: string): Promise<BlogPostRecord | null> {

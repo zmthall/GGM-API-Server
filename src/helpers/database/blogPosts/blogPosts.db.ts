@@ -1128,3 +1128,61 @@ export const deleteBlogPost = async (id: string): Promise<boolean> => {
 
   return result.rowCount === 1
 }
+
+export const findMatchingBlogPost = async (
+  input: {
+    id?: string
+    slug?: string
+    title?: string
+    canonicalUrl?: string
+  },
+  excludeId?: string
+): Promise<BlogPostRecord | null> => {
+  const clauses: string[] = []
+  const values: unknown[] = []
+  let index = 1
+
+  if (input.id) {
+    clauses.push(`id = $${index}`)
+    values.push(input.id)
+    index += 1
+  }
+
+  if (input.slug) {
+    clauses.push(`slug = $${index}`)
+    values.push(input.slug)
+    index += 1
+  }
+
+  if (input.title) {
+    clauses.push(`title = $${index}`)
+    values.push(input.title)
+    index += 1
+  }
+
+  if (input.canonicalUrl) {
+    clauses.push(`canonical_url = $${index}`)
+    values.push(input.canonicalUrl)
+    index += 1
+  }
+
+  if (!clauses.length) return null
+
+  let excludeClause = ''
+  if (excludeId) {
+    excludeClause = `and id <> $${index}`
+    values.push(excludeId)
+  }
+
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('full')}
+     from ${TABLE_NAME}
+     where (${clauses.join(' or ')})
+     ${excludeClause}
+     limit 1`,
+    values
+  )
+
+  if (!result.rows.length) return null
+  return mapFullRow(result.rows[0])
+}

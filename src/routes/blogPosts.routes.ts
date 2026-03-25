@@ -13,7 +13,7 @@ router.get('/route/health', (req, res) => {
 
 /**
  * Public read routes
- */
+*/
 router.get('/latest', blogPostsController.getLatest)
 router.get('/published', blogPostsController.fetchAllPublished)
 router.get('/published/slugs', blogPostsController.listPublishedSlugs)
@@ -40,9 +40,12 @@ router.get('/paginated', blogPostsController.listPaginated)
 router.get('/count', blogPostsController.count)
 router.get('/exists/id/:id', blogPostsController.existsById)
 
+router.post('/check-unique', blogPostsController.checkUniquePost)
+
 /**
  * Admin write routes
- */
+*/
+
 router.post('/', blogPostsController.create)
 router.patch('/publish/:id', blogPostsController.publish)
 router.delete('/:id', blogPostsController.remove)

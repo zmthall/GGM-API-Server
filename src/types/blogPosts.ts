@@ -154,6 +154,19 @@ export interface BlogImageUploadResult {
   height: number | null
 }
 
+export interface CheckUniquePostInput {
+  id?: string
+  slug?: string
+  title?: string
+  canonicalUrl?: string
+  excludeId?: string
+}
+
+export interface CheckUniquePostResult {
+  unique: boolean
+  match: BlogPostRecord | null
+}
+
 export interface CreateBlogPostInput {
   id: string
   slug: string

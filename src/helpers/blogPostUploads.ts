@@ -62,3 +62,30 @@ export function saveBlogImage(
     height
   }
 }
+
+export function deleteBlogImage(
+  imagePath: string,
+  destinationDir: string,
+  publicBasePath: string
+): void {
+  if (!imagePath) return
+
+  const normalizedPublicBasePath = publicBasePath.replace(/\/+$/, '')
+  const normalizedImagePath = imagePath.replace(/\\/g, '/')
+
+  if (!normalizedImagePath.startsWith(`${normalizedPublicBasePath}/`)) {
+    throw new Error('Image path does not match the expected public base path.')
+  }
+
+  const filename = normalizedImagePath.slice(normalizedPublicBasePath.length + 1)
+
+  if (!filename) {
+    throw new Error('Could not determine image filename from image path.')
+  }
+
+  const absoluteFilePath = path.join(destinationDir, filename)
+
+  if (fs.existsSync(absoluteFilePath)) {
+    fs.unlinkSync(absoluteFilePath)
+  }
+}

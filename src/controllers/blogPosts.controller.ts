@@ -826,6 +826,48 @@ export const blogPostsController = {
       })
     }
   },
+
+  async checkUniquePost(req: Request, res: Response): Promise<void> {
+    try {
+      const post = req.body?.post
+
+      if (!post || typeof post !== 'object') {
+        res.status(400).json({
+          success: false,
+          message: 'Missing post data.'
+        })
+        return
+      }
+
+      const result = await blogPostsService.checkUniquePost({
+        id: post.id,
+        slug: post.slug,
+        title: post.title,
+        canonicalUrl: post.canonicalUrl,
+        excludeId: post.excludeId
+      })
+
+      res.status(200).json({
+        success: true,
+        unique: result.unique,
+        match: result.match
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to check unique post.'
+
+      const statusCode =
+        error instanceof Error &&
+        error.message === 'At least one of id, slug, title, or canonicalUrl is required.'
+          ? 400
+          : 500
+
+      res.status(statusCode).json({
+        success: false,
+        message,
+        error: statusCode === 500 ? error : undefined
+      })
+    }
+  },
   
   async listRelatedPosts(req: Request, res: Response): Promise<void> {
   try {
