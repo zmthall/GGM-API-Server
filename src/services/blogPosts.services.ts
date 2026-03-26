@@ -71,11 +71,24 @@ export const blogPostsService = {
       updatedPost.thumbnail &&
       existingPost.thumbnail !== updatedPost.thumbnail
 
+    const seoImageChanged =
+      existingPost.seo_image &&
+      updatedPost.seo_image &&
+      existingPost.seo_image !== updatedPost.seo_image
+
     if (thumbnailChanged) {
       try {
         deleteBlogImage(existingPost.thumbnail, BLOG_THUMBNAILS_DIR, '/uploads/blog/thumbnails')
       } catch (error) {
         console.error('Failed to delete previous blog thumbnail:', error)
+      }
+    }
+
+    if (seoImageChanged) {
+      try {
+        deleteBlogImage(existingPost.seo_image, BLOG_SEO_DIR, '/uploads/blog/seo')
+      } catch (error) {
+        console.error('Failed to delete previous blog SEO image:', error)
       }
     }
 
@@ -89,6 +102,10 @@ export const blogPostsService = {
 
     if (post.thumbnail) {
       deleteBlogImage(post.thumbnail, BLOG_THUMBNAILS_DIR, '/uploads/blog/thumbnails')
+    }
+
+    if (post.seo_image) {
+      deleteBlogImage(post.seo_image, BLOG_SEO_DIR, '/uploads/blog/seo')
     }
 
     return deleteBlogPost(id)
