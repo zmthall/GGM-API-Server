@@ -6,7 +6,7 @@ import sizeOf from 'image-size'
 import type { ISizeCalculationResult } from 'image-size/dist/types/interface'
 import { BlogImageUploadResult } from '../types/blogPosts'
 
-const ALLOWED_BLOG_IMAGE_EXTENSIONS = new Set(['.png', '.webp'])
+const ALLOWED_BLOG_IMAGE_EXTENSIONS = new Set(['.png', '.webp', '.jpg', '.jpeg'])
 
 function ensureDir(dirPath: string): void {
   if (!fs.existsSync(dirPath)) {
@@ -71,7 +71,7 @@ export function deleteBlogImage(
   if (!imagePath) return
 
   const normalizedPublicBasePath = publicBasePath.replace(/\/+$/, '')
-  const normalizedImagePath = imagePath.replace(/\\/g, '/')
+  const normalizedImagePath = imagePath.replaceAll('\\', '/')
 
   const expectedPrefix = `${normalizedPublicBasePath}/`
 

@@ -32,9 +32,9 @@ router.get('/exists/slug/:slug/published', blogPostsController.existsPublishedBy
 */
 router.get('/all', blogPostsController.fetchAll)
 router.get('/id/:id', blogPostsController.getById)
-
-
 router.get('/slug/:slug', blogPostsController.getBySlug)
+
+
 router.get('/exists/slug/:slug', blogPostsController.existsBySlug)
 router.get('/paginated', blogPostsController.listPaginated)
 router.get('/count', blogPostsController.count)
