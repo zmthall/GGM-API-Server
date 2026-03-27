@@ -25,6 +25,7 @@
     "firebase": "^12.0.0",
     "firebase-admin": "^13.4.0",
     "googleapis": "^149.0.0",
+    "gray-matter": "^4.0.3",
     "helmet": "^8.1.0",
     "image-size": "^2.0.2",
     "mime": "^4.1.0",
