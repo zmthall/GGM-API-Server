@@ -2,10 +2,13 @@ import {
   createBlogPost,
   deleteBlogPost,
   getBlogPostById,
-  listBlogPosts
+  listBlogPreviewsPaginated
 } from './blogPosts.db'
 
-import type { CreateBlogPostInput } from '../../../types/blogPosts'
+import type {
+  BlogPostPreviewRecord,
+  CreateBlogPostInput
+} from '../../../types/blogPosts'
 
 const TOTAL_TEST_POSTS = 100
 
@@ -391,12 +394,14 @@ const createSeedPosts = async (): Promise<void> => {
 const verifySeedPosts = async (): Promise<void> => {
   logSection('VERIFYING SEEDED POSTS')
 
-  const allPosts = await listBlogPosts({
+  const previewResult = await listBlogPreviewsPaginated({
+    page: 1,
+    pageSize: 500,
     orderField: 'created_at',
     orderDirection: 'desc'
   })
 
-  const seededPosts = allPosts.filter(post =>
+  const seededPosts = previewResult.data.filter((post: BlogPostPreviewRecord) =>
     TEST_POST_IDS.includes(post.id)
   )
 
@@ -404,22 +409,10 @@ const verifySeedPosts = async (): Promise<void> => {
 
   let draftCount = 0
   let publishedCount = 0
-  let staffPickCount = 0
-  let featuredCount = 0
-  let futurePublishedCount = 0
 
   for (const post of seededPosts) {
     if (post.draft) draftCount += 1
     if (post.published) publishedCount += 1
-    if (post.staff_pick) staffPickCount += 1
-    if (post.featured) featuredCount += 1
-
-    if (
-      post.publish_timestamp &&
-      new Date(post.publish_timestamp).getTime() > Date.now()
-    ) {
-      futurePublishedCount += 1
-    }
 
     console.log(`ID: ${post.id}`)
     console.log(`Slug: ${post.slug}`)
@@ -427,19 +420,14 @@ const verifySeedPosts = async (): Promise<void> => {
     console.log(`Draft: ${post.draft}`)
     console.log(`Published: ${post.published}`)
     console.log(`Publish Timestamp: ${post.publish_timestamp}`)
-    console.log(`Featured: ${post.featured}`)
-    console.log(`Staff Pick: ${post.staff_pick}`)
-    console.log(`Tags: ${post.tags.join(', ')}`)
+    console.log(`Updated At: ${post.updated_at}`)
     console.log('---')
   }
 
   logSection('SEED SUMMARY')
-  console.log(`Total Seeded: ${seededPosts.length}`)
+  console.log(`Total Seeded Found In Preview Query: ${seededPosts.length}`)
   console.log(`Draft: ${draftCount}`)
   console.log(`Published: ${publishedCount}`)
-  console.log(`Staff Picks: ${staffPickCount}`)
-  console.log(`Featured: ${featuredCount}`)
-  console.log(`Future Publish Timestamp: ${futurePublishedCount}`)
   console.log('')
 }
 
