@@ -1,6 +1,4 @@
 import {
-  blogPostExistsById,
-  countBlogPosts,
   createBlogPost,
   deleteBlogPost,
   findMatchingBlogPost,
@@ -8,33 +6,18 @@ import {
   getBlogPostBySlug,
   getLatestBlogPost,
   getPublishedBlogPostBySlug,
-  listBlogPosts,
-  listBlogPostsByAuthor,
-  listBlogPostsByTag,
-  listBlogPostsPaginated,
   listBlogPreviewsPaginated,
-  listFeaturedBlogPosts,
   listPublishedBlogCardsPaginated,
-  listPublishedBlogPosts,
   listPublishedBlogPostSlugs,
   listRelatedBlogPosts,
   listStaffPickBlogPosts,
   publishBlogPost,
-  publishedSlugExists,
-  setBlogPostDraftStatus,
-  setBlogPostFeaturedStatus,
-  setBlogPostStaffPickStatus,
-  slugExists,
-  toggleBlogPostDraft,
-  toggleBlogPostFeatured,
-  toggleBlogPostStaffPick,
   unpublishBlogPost,
   updateBlogPost
 } from '../helpers/database/blogPosts/blogPosts.db'
 import type {
   BlogImageUploadResult,
   BlogPostCardRecord,
-  BlogPostExistsResult,
   BlogPostPreviewRecord,
   BlogPostRecord,
   BlogPostTinyRecord,
@@ -45,7 +28,6 @@ import type {
   ListBlogPostsOptions,
   PaginatedResult,
   RelatedBlogPostsQueryInput,
-  SlugExistsResult,
   UpdateBlogPostInput
 } from '../types/blogPosts'
 
@@ -117,7 +99,7 @@ export const blogPostsService = {
 
   async uploadSeo(file: Express.Multer.File): Promise<BlogImageUploadResult> {
     return saveBlogImage(file, BLOG_SEO_DIR, '/uploads/blog/seo')
-  },  
+  },
 
   async publish(id: string, publishTimestamp?: Date): Promise<BlogPostUpdateRecord | null> {
     return publishBlogPost(id, publishTimestamp)
@@ -125,30 +107,6 @@ export const blogPostsService = {
 
   async unpublish(id: string): Promise<BlogPostUpdateRecord | null> {
     return unpublishBlogPost(id)
-  },
-
-  async setDraftStatus(id: string, draft: boolean): Promise<BlogPostRecord | null> {
-    return setBlogPostDraftStatus(id, draft)
-  },
-
-  async toggleDraft(id: string): Promise<BlogPostRecord | null> {
-    return toggleBlogPostDraft(id)
-  },
-
-  async setFeaturedStatus(id: string, featured: boolean): Promise<BlogPostRecord | null> {
-    return setBlogPostFeaturedStatus(id, featured)
-  },
-
-  async toggleFeatured(id: string): Promise<BlogPostRecord | null> {
-    return toggleBlogPostFeatured(id)
-  },
-
-  async setStaffPickStatus(id: string, staffPick: boolean): Promise<BlogPostRecord | null> {
-    return setBlogPostStaffPickStatus(id, staffPick)
-  },
-
-  async toggleStaffPick(id: string): Promise<BlogPostRecord | null> {
-    return toggleBlogPostStaffPick(id)
   },
 
   async getById(id: string): Promise<BlogPostRecord | null> {
@@ -190,40 +148,7 @@ export const blogPostsService = {
   },
 
   async fetchAll(options: ListBlogPostsOptions = {}): Promise<PaginatedResult<BlogPostPreviewRecord>> {
-    return listBlogPreviewsPaginated(options);
-  },
-
-  async fetchAllPublished(): Promise<BlogPostRecord[]> {
-    return listPublishedBlogPosts()
-  },
-
-  async existsById(id: string): Promise<BlogPostExistsResult> {
-    const exists = await blogPostExistsById(id)
-    return { exists }
-  },
-
-  async existsBySlug(slug: string, excludeId?: string): Promise<SlugExistsResult> {
-    const exists = await slugExists(slug, excludeId)
-    return { exists }
-  },
-
-  async existsPublishedBySlug(slug: string, excludeId?: string): Promise<SlugExistsResult> {
-    const exists = await publishedSlugExists(slug, excludeId)
-    return { exists }
-  },
-
-  async list(options: ListBlogPostsOptions = {}): Promise<BlogPostRecord[]> {
-    return listBlogPosts(options)
-  },
-
-  async listPaginated(
-    options: ListBlogPostsOptions = {}
-  ): Promise<PaginatedResult<BlogPostRecord>> {
-    return listBlogPostsPaginated(options)
-  },
-
-  async listPublished(): Promise<BlogPostRecord[]> {
-    return listPublishedBlogPosts()
+    return listBlogPreviewsPaginated(options)
   },
 
   async listPublishedCardsPaginated(
@@ -236,26 +161,8 @@ export const blogPostsService = {
     return listPublishedBlogPostSlugs()
   },
 
-  async listFeatured(): Promise<BlogPostRecord[]> {
-    return listFeaturedBlogPosts()
-  },
-
   async listStaffPicks(): Promise<BlogPostTinyRecord[]> {
     return listStaffPickBlogPosts()
-  },
-
-  async listByTag(
-    tag: string,
-    options: Omit<ListBlogPostsOptions, 'tag'> = {}
-  ): Promise<BlogPostRecord[]> {
-    return listBlogPostsByTag(tag, options)
-  },
-
-  async listByAuthor(
-    author: string,
-    options: Omit<ListBlogPostsOptions, 'author'> = {}
-  ): Promise<BlogPostRecord[]> {
-    return listBlogPostsByAuthor(author, options)
   },
 
   async listRelatedPosts(id: string, limit = 4): Promise<BlogPostCardRecord[]> {
@@ -278,9 +185,5 @@ export const blogPostsService = {
     }
 
     return listRelatedBlogPosts(relatedInput, safeLimit)
-  },
-
-  async count(options: ListBlogPostsOptions = {}): Promise<number> {
-    return countBlogPosts(options)
   }
 }

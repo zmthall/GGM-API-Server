@@ -2,6 +2,9 @@ import { Router } from 'express'
 import { blogPostsController } from '../controllers/blogPosts.controller'
 import multer from 'multer'
 
+// MIDDLEWARE
+import { verifyFirebaseToken } from '../middlewares/verifyFirebaseToken'
+
 const router = Router()
 
 router.get('/route/health', (req, res) => {
@@ -17,61 +20,38 @@ router.get('/route/health', (req, res) => {
 router.get('/latest', blogPostsController.getLatest)
 router.get('/published', blogPostsController.fetchAllPublished)
 router.get('/published/slugs', blogPostsController.listPublishedSlugs)
-router.get('/featured', blogPostsController.listFeatured)
 router.get('/staff-picks', blogPostsController.listStaffPicks)
 router.get('/related-posts/:id', blogPostsController.listRelatedPosts)
-
-
-router.get('/tag/:tag', blogPostsController.listByTag)
-router.get('/author/:author', blogPostsController.listByAuthor)
 router.get('/slug/:slug/published', blogPostsController.getPublishedBySlug)
-router.get('/exists/slug/:slug/published', blogPostsController.existsPublishedBySlug)
 
 /**
  * Admin read routes
 */
-router.get('/all', blogPostsController.fetchAll)
-router.get('/id/:id', blogPostsController.getById)
-router.get('/slug/:slug', blogPostsController.getBySlug)
+router.get('/all', verifyFirebaseToken, blogPostsController.fetchAll)
+router.get('/id/:id', verifyFirebaseToken, blogPostsController.getById)
+router.get('/slug/:slug', verifyFirebaseToken, blogPostsController.getBySlug)
+router.post('/check-unique', verifyFirebaseToken, blogPostsController.checkUniquePost)
 
-
-router.get('/exists/slug/:slug', blogPostsController.existsBySlug)
-router.get('/paginated', blogPostsController.listPaginated)
-router.get('/count', blogPostsController.count)
-router.get('/exists/id/:id', blogPostsController.existsById)
-
-router.post('/check-unique', blogPostsController.checkUniquePost)
 
 /**
- * Admin write routes
+ * Admin editing routes
 */
+router.post('/', verifyFirebaseToken, blogPostsController.create)
+router.patch('/publish/:id', verifyFirebaseToken, blogPostsController.publish)
+router.delete('/:id', verifyFirebaseToken, blogPostsController.remove)
+router.patch('/:id', verifyFirebaseToken, blogPostsController.update)
 
-router.post('/', blogPostsController.create)
-router.patch('/publish/:id', blogPostsController.publish)
-router.delete('/:id', blogPostsController.remove)
-
-router.patch('/:id', blogPostsController.update)
-router.patch('/unpublish/:id', blogPostsController.unpublish)
-
-router.patch('/:id/draft', blogPostsController.setDraft)
-router.patch('/:id/draft/toggle', blogPostsController.toggleDraft)
-
-router.patch('/:id/featured', blogPostsController.setFeatured)
-router.patch('/:id/featured/toggle', blogPostsController.toggleFeatured)
-
-router.patch('/:id/staff-pick', blogPostsController.setStaffPick)
-router.patch('/:id/staff-pick/toggle', blogPostsController.toggleStaffPick)
+router.patch('/unpublish/:id', verifyFirebaseToken, blogPostsController.unpublish)
 
 /**
  * Admin Media Routes
 */
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }
 })
 
-router.post('/upload-thumbnail', upload.single('thumbnailImage'), blogPostsController.uploadThumbnail)
-router.post('/upload-seo', upload.single('seoImage'), blogPostsController.uploadSeo)
+router.post('/upload-thumbnail', verifyFirebaseToken, upload.single('thumbnailImage'), blogPostsController.uploadThumbnail)
+router.post('/upload-seo', verifyFirebaseToken, upload.single('seoImage'), blogPostsController.uploadSeo)
 
 export default router
