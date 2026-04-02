@@ -10,6 +10,7 @@ import {
   listPublishedBlogCardsPaginated,
   listPublishedBlogPostSlugs,
   listRelatedBlogPosts,
+  listSitemapBlogPosts,
   listStaffPickBlogPosts,
   publishBlogPost,
   unpublishBlogPost,
@@ -20,6 +21,7 @@ import type {
   BlogPostCardRecord,
   BlogPostPreviewRecord,
   BlogPostRecord,
+  BlogPostSitemapRecord,
   BlogPostTinyRecord,
   BlogPostUpdateRecord,
   CheckUniquePostInput,
@@ -155,6 +157,10 @@ export const blogPostsService = {
     options: ListBlogPostsOptions = {}
   ): Promise<PaginatedResult<BlogPostCardRecord>> {
     return listPublishedBlogCardsPaginated(options)
+  },
+
+  async listSitemap(): Promise<BlogPostSitemapRecord[]> {
+    return listSitemapBlogPosts()
   },
 
   async listPublishedSlugs(): Promise<string[]> {

@@ -15,6 +15,11 @@ router.get('/route/health', (req, res) => {
 })
 
 /**
+ * Sitemap Route
+*/
+router.get('/sitemap', blogPostsController.listSitemap)
+
+/**
  * Public read routes
 */
 router.get('/latest', blogPostsController.getLatest)

@@ -12,6 +12,7 @@ export type BlogPostSelectPreset =
   | 'slugOnly'
   | 'seo'
   | 'tiny'
+  | 'sitemap'
 
 export interface PaginationOptions {
   page?: number
@@ -132,6 +133,13 @@ export interface BlogPostTinyRecord {
 
 export interface BlogPostSlugRecord {
   slug: string
+}
+
+export interface BlogPostSitemapRecord {
+  slug: string
+  canonical_url: string
+  publish_timestamp: Date | null
+  updated_at: Date
 }
 
 export type BlogPostRecord = BlogPostFullRecord

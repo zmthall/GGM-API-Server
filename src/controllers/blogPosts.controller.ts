@@ -333,6 +333,23 @@ export const blogPostsController = {
       })
     }
   },
+  
+  async listSitemap(req: Request, res: Response): Promise<void> {
+    try {
+      const posts = await blogPostsService.listSitemap()
+
+      res.status(200).json({
+        success: true,
+        data: posts
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to list sitemap blog posts.',
+        error
+      })
+    }
+  },
 
   async listStaffPicks(req: Request, res: Response): Promise<void> {
     try {

@@ -14,6 +14,7 @@ import type {
   BlogPostPreviewRecord,
   BlogPostRecord,
   BlogPostSelectPreset,
+  BlogPostSitemapRecord,
   BlogPostSlugRecord,
   BlogPostTinyRecord,
   BlogPostUpdateRecord,
@@ -107,6 +108,12 @@ const BLOG_POST_SELECT_MAP: Record<BlogPostSelectPreset, string> = {
     seo_image,
     canonical_url,
     publish_timestamp
+  `,
+  sitemap: `
+    slug,
+    canonical_url,
+    publish_timestamp,
+    updated_at
   `
 }
 
@@ -197,6 +204,15 @@ const mapTinyRow = (row: Record<string, unknown>): BlogPostTinyRecord => {
     slug: toSafeString(row.slug),
     title: toSafeString(row.title),
     summary: toSafeString(row.summary)
+  }
+}
+
+const mapSitemapRow = (row: Record<string, unknown>): BlogPostSitemapRecord => {
+  return {
+    slug: toSafeString(row.slug),
+    canonical_url: toSafeString(row.canonical_url),
+    publish_timestamp: toSafeNullableDate(row.publish_timestamp),
+    updated_at: toSafeDate(row.updated_at)
   }
 }
 
@@ -394,6 +410,18 @@ export const listBlogPostTinyRecords = async (
   )
 
   return result.rows.map(mapTinyRow)
+}
+
+export const listSitemapBlogPosts = async (): Promise<BlogPostSitemapRecord[]> => {
+  const result = await postgresPool.query(
+    `select ${buildSelectClause('sitemap')}
+     from ${TABLE_NAME}
+     where ${PUBLIC_BLOG_POSTS_WHERE}
+       and slug <> ''
+     order by publish_timestamp desc nulls last, created_at desc`
+  )
+
+  return result.rows.map(mapSitemapRow)
 }
 
 export const listRelatedBlogPosts = async (
