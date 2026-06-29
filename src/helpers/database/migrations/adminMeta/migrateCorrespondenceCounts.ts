@@ -7,9 +7,10 @@ import type { MigrationResult } from '../shared/migration.types'
 
 interface FirestoreCorrespondenceCountsDocument {
   id: string
-  applicationsNew?: number
   messagesNew?: number
   rideRequestsNew?: number
+  consultationRequestsNew?: number
+  applicationsNew?: number
   updatedAt?: string
   createdAt?: string
 }
@@ -44,9 +45,10 @@ export const migrateCorrespondenceCounts = async (): Promise<MigrationResult> =>
     result.fetchedCount = 1
 
     await upsertCorrespondenceCounts({
-      applicationsNew: toSafeNumber(firestoreDoc.applicationsNew),
       messagesNew: toSafeNumber(firestoreDoc.messagesNew),
       rideRequestsNew: toSafeNumber(firestoreDoc.rideRequestsNew),
+      consultationRequestsNew: toSafeNumber(firestoreDoc.consultationRequestsNew),
+      applicationsNew: toSafeNumber(firestoreDoc.applicationsNew),
       createdAt: toSafeNullableDate(firestoreDoc.createdAt),
       updatedAt: toSafeNullableDate(firestoreDoc.updatedAt),
       rawPayload: toSafeObject(firestoreDoc)
