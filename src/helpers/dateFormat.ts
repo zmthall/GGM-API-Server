@@ -9,27 +9,33 @@
     }
   }
 
-export const formatDateTime = (dateInput: string | Date): string => {
-  const date = new Date(dateInput);
-  
-  const months: string[] = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  
-  const day: number = date.getDate();
-  const month: string = months[date.getMonth()];
-  const year: number = date.getFullYear();
-  
-  // Format time to 12-hour format
-  const timeString = new Intl.DateTimeFormat('en-US', {
+export const formatDateTime = (
+  dateInput: string | Date,
+  timeZone = 'America/Denver'
+): string => {
+  const date = new Date(dateInput)
+
+  const parts = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-    timeZone: 'America/Denver' // Match your timezone
-  }).format(date);
-  
-  return `${month} ${day}${getOrdinalSuffix(day)}, ${year} at ${timeString}`;
+    timeZone
+  }).formatToParts(date)
+
+  const getPart = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find(part => part.type === type)?.value ?? ''
+
+  const month = getPart('month')
+  const day = Number(getPart('day'))
+  const year = getPart('year')
+  const hour = getPart('hour')
+  const minute = getPart('minute')
+  const dayPeriod = getPart('dayPeriod')
+
+  return `${month} ${day}${getOrdinalSuffix(day)}, ${year} at ${hour}:${minute} ${dayPeriod}`
 }
 
 export const formatSubmissionDate = (date: Date = new Date()): string => {
