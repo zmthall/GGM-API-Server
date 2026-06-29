@@ -36,7 +36,7 @@ export const toSafeDate = (value: unknown): Date => {
 }
 
 export const toSafeNullableDate = (value: unknown): Date | null => {
-  if (value == null) {
+  if (value == null || value === undefined) {
     return null
   }
 
@@ -69,6 +69,21 @@ export const toSafeObject = (value: unknown): Record<string, unknown> => {
   }
 
   return {}
+}
+
+export const toSafeObjectArray = (
+  value: unknown
+): Record<string, unknown>[] => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter(
+    (item): item is Record<string, unknown> =>
+      !!item &&
+      typeof item === 'object' &&
+      !Array.isArray(item)
+  )
 }
 
 import type { CorrespondenceStatus } from '../types/notification'

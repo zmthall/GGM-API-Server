@@ -8,6 +8,7 @@ import { rideRequestsSchema } from './rideRequests/rideRequests.schema'
 import type { DatabaseSchemaModule } from './schema.types'
 import { jobApplicationsSchema } from './jobApplications/jobApplications.schema'
 import { blogPostsSchema } from './blogPosts/blogPosts.schema'
+import { consultationRequestsSchema } from './consultationRequests/consultationRequest.schema'
 
 export const databaseSchemaModules: DatabaseSchemaModule[] = [
   correspondenceCountsSchema,
@@ -17,8 +18,9 @@ export const databaseSchemaModules: DatabaseSchemaModule[] = [
   eventsSchema,
   contactMessagesSchema,
   rideRequestsSchema,
+  consultationRequestsSchema,
   jobApplicationsSchema,
-  blogPostsSchema
+  blogPostsSchema,
 ]
 
 export * from './schema.types'

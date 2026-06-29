@@ -4,6 +4,7 @@ import type { ContactFormData } from '../types/contactForm';
 
 import { Emailer } from '../helpers/email';
 import { RideRequestData } from '../types/rideRequest';
+import { CondensedConsultationData } from '../types/consultationForm';
 
 export const sendSingleEmail = async (message: EmailMessage): Promise<{ success: boolean; messageId?: string; error?: string }> => {
   try {
@@ -74,6 +75,23 @@ export const sendRideRequestEmail = async (
 ): Promise<{ success: boolean; messageId?: string; error?: string }> => {
   try {
     const result = await Emailer.main.sendRideRequestEmail(rideData);
+    return {
+      success: true,
+      messageId: result.messageId
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message
+    }
+  }
+}
+
+export const sendConsultationRequestEmail = async (
+  consultationData: CondensedConsultationData
+): Promise<{ success: boolean; messageId?: string; error?: string }> => {
+  try {
+    const result = await Emailer.main.sendConsultationRequestEmail(consultationData);
     return {
       success: true,
       messageId: result.messageId

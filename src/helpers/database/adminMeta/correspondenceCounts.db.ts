@@ -6,25 +6,28 @@ const SINGLETON_ID = 'correspondence_counts'
 
 export interface CorrespondenceCountsRecord {
   id: string
-  applications_new: number
   messages_new: number
   ride_requests_new: number
+  consultation_requests_new: number
+  applications_new: number
   created_at: Date
   updated_at: Date
   raw_payload: Record<string, unknown>
 }
 
 export interface UpdateCorrespondenceCountsInput {
-  applicationsNew?: number
   messagesNew?: number
   rideRequestsNew?: number
+  consultationRequestsNew?: number
+  applicationsNew?: number
   rawPayload?: Record<string, unknown>
 }
 
 export interface UpsertCorrespondenceCountsInput {
-  applicationsNew: number
   messagesNew: number
   rideRequestsNew: number
+  consultationRequestsNew: number
+  applicationsNew: number
   createdAt?: Date | null
   updatedAt?: Date | null
   rawPayload?: Record<string, unknown>
@@ -36,34 +39,38 @@ export const upsertCorrespondenceCounts = async (
   const result = await postgresPool.query(
     `insert into ${TABLE_NAME} (
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload
       )
-      values ($1, $2, $3, $4, $5, $6, $7::jsonb)
+      values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
       on conflict (id)
       do update set
-        applications_new = excluded.applications_new,
         messages_new = excluded.messages_new,
         ride_requests_new = excluded.ride_requests_new,
+        consultation_requests_new = excluded.consultation_requests_new,
+        applications_new = excluded.applications_new,
         updated_at = excluded.updated_at,
         raw_payload = excluded.raw_payload
       returning
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload;`,
     [
       SINGLETON_ID,
-      input.applicationsNew,
       input.messagesNew,
       input.rideRequestsNew,
+      input.consultationRequestsNew,
+      input.applicationsNew,
       input.createdAt ?? new Date(),
       input.updatedAt ?? new Date(),
       JSON.stringify(input.rawPayload ?? {})
@@ -80,9 +87,10 @@ export const upsertCorrespondenceCounts = async (
 const mapRowToCorrespondenceCountsRecord = (row: Record<string, unknown>): CorrespondenceCountsRecord => {
   return {
     id: toSafeString(row.id),
-    applications_new: Number(row.applications_new ?? 0),
     messages_new: Number(row.messages_new ?? 0),
     ride_requests_new: Number(row.ride_requests_new ?? 0),
+    consultation_requests_new: Number(row.consultation_requests_new ?? 0),
+    applications_new: Number(row.applications_new ?? 0),
     created_at: toSafeDate(row.created_at),
     updated_at: toSafeDate(row.updated_at),
     raw_payload: (row.raw_payload as Record<string, unknown> | null) ?? {}
@@ -93,14 +101,15 @@ export const ensureCorrespondenceCountsExists = async (): Promise<void> => {
   await postgresPool.query(
     `insert into ${TABLE_NAME} (
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload
       )
-      values ($1, 0, 0, 0, $2, $3, $4::jsonb)
+      values ($1, 0, 0, 0, 0, $2, $3, $4::jsonb)
       on conflict (id) do nothing;`,
     [SINGLETON_ID, new Date(), new Date(), JSON.stringify({})]
   )
@@ -110,9 +119,10 @@ export const getCorrespondenceCounts = async (): Promise<CorrespondenceCountsRec
   const result = await postgresPool.query(
     `select
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload
@@ -135,25 +145,28 @@ export const updateCorrespondenceCounts = async (
   const result = await postgresPool.query(
     `update ${TABLE_NAME}
       set
-        applications_new = coalesce($2, applications_new),
-        messages_new = coalesce($3, messages_new),
-        ride_requests_new = coalesce($4, ride_requests_new),
-        raw_payload = coalesce($5::jsonb, raw_payload),
+        messages_new = coalesce($2, messages_new),
+        ride_requests_new = coalesce($3, ride_requests_new),
+        consultation_requests_new = coalesce($4, consultation_requests_new),
+        applications_new = coalesce($5, applications_new),
+        raw_payload = coalesce($6::jsonb, raw_payload),
         updated_at = now()
       where id = $1
       returning
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload;`,
     [
       SINGLETON_ID,
-      input.applicationsNew ?? null,
       input.messagesNew ?? null,
       input.rideRequestsNew ?? null,
+      input.consultationRequestsNew ?? null,
+      input.applicationsNew ?? null,
       input.rawPayload ? JSON.stringify(input.rawPayload) : null
     ]
   )
@@ -174,9 +187,10 @@ export const incrementApplicationsNew = async (amount = 1): Promise<Corresponden
       where id = $1
       returning
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload;`,
@@ -199,9 +213,10 @@ export const incrementMessagesNew = async (amount = 1): Promise<CorrespondenceCo
       where id = $1
       returning
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload;`,
@@ -224,9 +239,10 @@ export const incrementRideRequestsNew = async (amount = 1): Promise<Corresponden
       where id = $1
       returning
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload;`,
@@ -249,9 +265,10 @@ export const decrementApplicationsNew = async (amount = 1): Promise<Corresponden
       where id = $1
       returning
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload;`,
@@ -274,9 +291,10 @@ export const decrementMessagesNew = async (amount = 1): Promise<CorrespondenceCo
       where id = $1
       returning
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload;`,
@@ -299,9 +317,10 @@ export const decrementRideRequestsNew = async (amount = 1): Promise<Corresponden
       where id = $1
       returning
         id,
-        applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
+        applications_new,
         created_at,
         updated_at,
         raw_payload;`,
@@ -315,13 +334,66 @@ export const decrementRideRequestsNew = async (amount = 1): Promise<Corresponden
   return mapRowToCorrespondenceCountsRecord(result.rows[0])
 }
 
+export const incrementConsultationRequestsNew = async (amount = 1): Promise<CorrespondenceCountsRecord> => {
+  const result = await postgresPool.query(
+    `update ${TABLE_NAME}
+      set
+        consultation_requests_new = consultation_requests_new + $2,
+        updated_at = now()
+      where id = $1
+      returning
+        id,
+        messages_new,
+        ride_requests_new,
+        consultation_requests_new,
+        applications_new,
+        created_at,
+        updated_at,
+        raw_payload;`,
+    [SINGLETON_ID, amount]
+  )
+
+  if (!result.rows.length) {
+    throw new Error('Failed to increment consultation_requests_new.')
+  }
+
+  return mapRowToCorrespondenceCountsRecord(result.rows[0])
+}
+
+export const decrementConsultationRequestsNew = async (amount = 1): Promise<CorrespondenceCountsRecord> => {
+  const result = await postgresPool.query(
+    `update ${TABLE_NAME}
+      set
+        consultation_requests_new = greatest(consultation_requests_new - $2, 0),
+        updated_at = now()
+      where id = $1
+      returning
+        id,
+        messages_new,
+        ride_requests_new,
+        consultation_requests_new,
+        applications_new,
+        created_at,
+        updated_at,
+        raw_payload;`,
+    [SINGLETON_ID, amount]
+  )
+
+  if (!result.rows.length) {
+    throw new Error('Failed to decrement consultation_requests_new.')
+  }
+
+  return mapRowToCorrespondenceCountsRecord(result.rows[0])
+}
+
 export const resetCorrespondenceCounts = async (): Promise<CorrespondenceCountsRecord> => {
   const result = await postgresPool.query(
     `update ${TABLE_NAME}
       set
-        applications_new = 0,
         messages_new = 0,
         ride_requests_new = 0,
+        consultation_requests_new = 0,
+        applications_new = 0,
         updated_at = now()
       where id = $1
       returning
@@ -329,6 +401,7 @@ export const resetCorrespondenceCounts = async (): Promise<CorrespondenceCountsR
         applications_new,
         messages_new,
         ride_requests_new,
+        consultation_requests_new,
         created_at,
         updated_at,
         raw_payload;`,

@@ -39,6 +39,7 @@ import verify from './routes/verify.routes'
 import blogCalendar from './routes/blogCalendar.routes'
 import blogPosts from './routes/blogPosts.routes'
 import notifications from './routes/notification.routes'
+import consultation from './routes/consultation.routes'
 
 import { errorHandler } from './middlewares/errorHandler'
 import { routeLogger } from './middlewares/routeLogs'
@@ -193,6 +194,7 @@ app.use('/api/email', email)
 app.use('/api/application', application)
 app.use('/api/contact-form', contactForm)
 app.use('/api/ride-request', rideRequest)
+app.use('/api/consultation-request', consultation)
 app.use('/api/users', userManagement)
 app.use('/api/leads', lead)
 app.use('/api/houses', houses)

@@ -12,6 +12,7 @@ import { ContactFormData } from '../types/contactForm'
 import { RideRequestData } from '../types/rideRequest'
 import type { ApplicationData, ApplicationDocument, FileData } from '../types/application'
 import { toSafeString } from '../helpers/safe'
+import { CondensedConsultationData } from '../types/consultationForm'
 
 export function makeCryptoService(cfg: CryptoConfig): CryptoSvc {
   const keyring = [cfg.current, ...cfg.retired]
@@ -110,6 +111,44 @@ export function makeCryptoService(cfg: CryptoConfig): CryptoSvc {
     if (!contactDataArr) return contactDataArr
     return contactDataArr.map(contact => decryptContact(contact, aad))
   }
+
+  const encryptConsultation = <T extends CondensedConsultationData>(
+    consultationData: T,
+    aad?: string
+  ): T => {
+    if (!consultationData) return consultationData
+
+    return {
+      ...consultationData,
+      first_name: encrypt(consultationData.first_name, aad ?? ''),
+      last_name: encrypt(consultationData.last_name, aad ?? ''),
+      email: encrypt(consultationData.email, aad ?? ''),
+      phone: consultationData.phone ? encrypt(consultationData.phone, aad ?? '') : '',
+      message: encrypt(consultationData.message, aad ?? '')
+    }
+  }
+
+  const decryptConsultation = <T extends CondensedConsultationData>(
+    consultationData: T,
+    aad?: string
+  ): T => {
+    if (!consultationData) return consultationData
+
+    return {
+      ...consultationData,
+      first_name: decrypt(consultationData.first_name, aad ?? ''),
+      last_name: decrypt(consultationData.last_name, aad ?? ''),
+      email: decrypt(consultationData.email, aad ?? ''),
+      phone: consultationData.phone ? decrypt(consultationData.phone, aad ?? '') : '',
+      message: decrypt(consultationData.message, aad ?? '')
+    }
+  }
+
+  const decryptConsultations = <T extends CondensedConsultationData>(consultationDataArr: T[], aad?: string): T[] => {
+    if (!consultationDataArr) return consultationDataArr
+    return consultationDataArr.map(consultation => decryptConsultation(consultation, aad))
+  }
+
 
   const toStr = (v: unknown) => {
     if (v === null || v === undefined) return '';
@@ -229,6 +268,9 @@ export function makeCryptoService(cfg: CryptoConfig): CryptoSvc {
     encryptApplication,
     decryptApplication,
     decryptApplications,
+    encryptConsultation,
+    decryptConsultation,
+    decryptConsultations
   }
 }
 

@@ -6,7 +6,9 @@ import {
   incrementRideRequestsNew,
   decrementApplicationsNew,
   decrementMessagesNew,
-  decrementRideRequestsNew
+  decrementRideRequestsNew,
+  incrementConsultationRequestsNew,
+  decrementConsultationRequestsNew
 } from '../helpers/database/adminMeta/correspondenceCounts.db'
 import { toSafeString } from '../helpers/safe'
 import { CorrespondenceStatus, NotificationCounts, CorrespondenceType } from '../types/notification'
@@ -23,15 +25,17 @@ export const getAllNotificationCounts = async (): Promise<NotificationCounts> =>
   await ensureCorrespondenceCountsExists()
   const data = await getCorrespondenceCounts()
 
-  const rideRequestsNew = toNumber(data.ride_requests_new)
   const messagesNew = toNumber(data.messages_new)
+  const rideRequestsNew = toNumber(data.ride_requests_new)
+  const consultationRequestsNew = toNumber(data.consultation_requests_new)
   const applicationsNew = toNumber(data.applications_new)
 
   return {
     rideRequestsNew,
     messagesNew,
+    consultationRequestsNew,
     applicationsNew,
-    totalNew: rideRequestsNew + messagesNew + applicationsNew,
+    totalNew: rideRequestsNew + messagesNew + consultationRequestsNew + applicationsNew,
     updatedAt: data?.updated_at?.toISOString?.()
   }
 }
@@ -54,6 +58,12 @@ const adjustNotificationCount = async (type: CorrespondenceType, delta: number):
 
     if (type === 'applications') {
       await incrementApplicationsNew(amount)
+      return
+    }
+
+    if (type === 'consultation_requests') {
+      await incrementConsultationRequestsNew(amount)
+      return
     }
 
     return
@@ -71,6 +81,11 @@ const adjustNotificationCount = async (type: CorrespondenceType, delta: number):
 
   if (type === 'applications') {
     await decrementApplicationsNew(amount)
+    return
+  }
+
+  if (type === 'consultation_requests') {
+    await decrementConsultationRequestsNew(amount)
   }
 }
 

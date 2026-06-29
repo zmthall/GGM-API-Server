@@ -1,5 +1,5 @@
 // /types/notifications.ts
-export type CorrespondenceType = 'ride_requests' | 'messages' | 'applications';
+export type CorrespondenceType = 'messages' | 'ride_requests' | 'consultation_requests' | 'applications';
 
 export type CorrespondenceStatus = 
   | "new"
@@ -14,15 +14,17 @@ export type CorrespondenceStatus =
   | "contacted"
 
 export type NotificationCountsDoc = {
-  rideRequestsNew: number;
   messagesNew: number;
+  rideRequestsNew: number;
+  consultationRequestsNew: number;
   applicationsNew: number;
   updatedAt?: any;
 };
 
 export type NotificationCounts = {
-  rideRequestsNew: number;
   messagesNew: number;
+  rideRequestsNew: number;
+  consultationRequestsNew: number;
   applicationsNew: number;
   totalNew: number;
   updatedAt?: string;

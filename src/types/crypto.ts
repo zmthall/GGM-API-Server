@@ -1,6 +1,7 @@
 import type { ContactFormData } from './contactForm'
 import type { RideRequestData } from './rideRequest'
 import type { ApplicationData, ApplicationDocument } from './application'
+import { CondensedConsultationData } from './consultationForm'
 
 export type EncryptedContactFields = {
   first_name: string
@@ -46,4 +47,17 @@ export type CryptoSvc = {
   encryptApplication(app: ApplicationData, aad?: string): ApplicationData
   decryptApplication(app: ApplicationDocument, aad?: string): ApplicationDocument
   decryptApplications(arr: ApplicationDocument[], aad?: string): ApplicationDocument[]
-}
+
+  encryptConsultation<T extends CondensedConsultationData>(
+  consultationData: T,
+    aad?: string
+  ): T
+  decryptConsultation<T extends CondensedConsultationData>(
+    consultationData: T,
+    aad?: string
+  ): T
+  decryptConsultations<T extends CondensedConsultationData>(
+    consultationDataArr: T[],
+    aad?: string
+  ): T[]
+  }
